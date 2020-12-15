@@ -1,6 +1,6 @@
 
 include("../src/read_solomon_data.jl")
-include("../src/vrp_cg_rmp.jl")
+include("../src/vrp_bnb.jl")
 
 
 function generate_solomon_vrptw_instance(dataset_name)
@@ -53,8 +53,8 @@ end
 
 
 
-solomon_vrptw = generate_solomon_vrptw_instance("R101_100")
-@time sol_y, sol_routes, sol_obj = solve_cg_rmp(solomon_vrptw)
+solomon_vrptw = generate_solomon_vrptw_instance("R101_025")
+@time sol_y, sol_routes, sol_obj = solve_vrp_bnb(solomon_vrptw)
 
 for n in 1:length(sol_y)
     if sol_y[n] > 0.01

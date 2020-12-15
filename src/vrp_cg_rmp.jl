@@ -32,7 +32,7 @@ end
 
 
 
-function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer)
+function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial_routes=[])
     n_nodes, n_customers, depot0, depot_dummy = read_vrptw_instance(vrptw)
     set_N = 1:n_nodes
     set_C = 1:n_customers
@@ -82,7 +82,7 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer)
         append!(incidence, inc)    
     end
 
-    routes = []
+    routes = deepcopy(initial_routes)
     cost_routes = []
     incidence = ElasticArray{Float64}(undef, n_customers, 0)
     for c in set_C
