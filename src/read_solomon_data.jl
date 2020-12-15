@@ -43,7 +43,7 @@ struct Request
     service_time::Float64
 end
 
-function readdata(data_filename)
+function read_solomon_data(data_filename)
     # data_filename = joinpath("solomon-1987-c1", "C101_100.xml")
 
     xdoc = parse_file(data_filename)
