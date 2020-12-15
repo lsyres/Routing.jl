@@ -1,4 +1,4 @@
-using JuMP, GLPK, Gurobi, CPLEX
+using JuMP, GLPK
 using ElasticArrays
 using DelimitedFiles
 
@@ -9,31 +9,31 @@ debug = false
 
 function solve_cg(filename)
 
-    dataset, data_name, node, fleet, request = readdata(data_filename)
-    n_nodes = length(node)
+    dataset, data_name, nodes, fleet, requests = readdata(data_filename)
+    n_nodes = length(nodes)
     n_vehicles = fleet.number
-    n_requests = length(request)
+    n_requests = length(requests)
 
     # Add a dummy node for depot at the end
-    push!(node, node[n_nodes])
+    push!(nodes, nodes[n_nodes])
     depot0 = n_requests + 1
     depot_dummy = n_requests + 2
-    cost = calculate_cost(node)
+    cost = calculate_cost(nodes)
     cost[depot0, depot_dummy] = Inf
     cost[depot_dummy, depot0] = Inf
 
-    n_nodes = length(node)
+    n_nodes = length(nodes)
     @assert n_nodes - 2 == n_requests
     V = 1:n_vehicles
     N = 1:n_nodes
     C = 1:n_requests
 
-    d = [request[i].quantity for i in C]
+    d = [requests[i].quantity for i in C]
     q = fleet.capacity
-    a = [request[i].start_time for i in C]
-    b = [request[i].end_time for i in C]
+    a = [requests[i].start_time for i in C]
+    b = [requests[i].end_time for i in C]
     t = copy(cost)
-    θ = [request[i].service_time for i in C]
+    θ = [requests[i].service_time for i in C]
     for i in N, j in N 
         if i in C
             t[i, j] = cost[i, j] + θ[i]
@@ -52,7 +52,7 @@ function solve_cg(filename)
     resrc_mtx = zeros(n_nodes, n_nodes)
     for i in N, j in N 
         if j in C
-            resrc_mtx[i, j] = request[j].quantity
+            resrc_mtx[i, j] = requests[j].quantity
         end
     end
     early_time = [a; 0; 0]
@@ -78,11 +78,11 @@ function solve_cg(filename)
     end
 
     routes = []
-    cost_route = []
+    cost_routes = []
     incidence = ElasticArray{Float64}(undef, n_requests, 0)
-    for r in request
+    for r in requests
         new_route = [depot0, r.node, depot_dummy]
-        add_route!(routes, cost_route, incidence, new_route)
+        add_route!(routes, cost_routes, incidence, new_route)
         # push!(routes, new_route)
         # push!(cost_route, calcuate_cost_routes(new_route))
         # inc = zeros(Int, n_requests)
@@ -96,27 +96,32 @@ function solve_cg(filename)
 
     # gurobi_env = Gurobi.Env()
 
-    old_dual_var = []
-    for iter in 1:max_iter
-        # RMP = Model(Gurobi.Optimizer)
-        RMP = Model(optimizer_with_attributes(CPLEX.Optimizer, "CPX_PARAM_SCRIND" => 0))
+    function solve_RMP(routes, cost_routes, requests; optimizer=GLPK.Optimizer)
+        RMP = Model(GLPK.Optimizer)
         set_R = 1:length(routes)
-        set_C = 1:n_requests
+        set_C = 1:length(requests)
         @variable(RMP, y[set_R] >= 0)
-        @objective(RMP, Min, sum(cost_route[r] * y[r] for r in set_R))
+        @objective(RMP, Min, sum(cost_routes[r] * y[r] for r in set_R))
         @constraint(RMP, rrc[i in set_C], sum(incidence[i, r] * y[r] for r in set_R) == 1)
         optimize!(RMP)
+        return JuMP.dual.(rrc), JuMP.value.(y), objective_value(RMP)
+    end
 
-        # Initialize the dual variable α   
+    old_dual_var = []
+    # RMP = Model(Gurobi.Optimizer)
+    # RMP = Model(optimizer_with_attributes(CPLEX.Optimizer, "CPX_PARAM_SCRIND" => 0))
+    optimizer = GLPK.Optimizer
+
+    for iter in 1:max_iter        
+        dual_var, y, obj_rmp = solve_RMP(routes, cost_routes, requests; optimizer=optimizer)
         # α[depot0] is for the depot
         # depot0 is the origin, depot_dummy is the destination
-        dual_var = dual.(rrc)        
         α = [dual_var; 0.0; 0.0]
         !debug || @show α
-        !debug || @show objective_value(RMP)
+        !debug || @show obj_rmp
 
         
-        @info("---- iteration $iter -----(n_routes = $(length(routes))-----(obj = $(objective_value(RMP)))---------------")
+        @info("---- iteration $iter -----(n_routes = $(length(routes))-----(obj = $obj_rmp)---------------")
 
         # Create a new cost_mtx 
         cost_mtx = copy(cost_mtx_org)
@@ -146,12 +151,12 @@ function solve_cg(filename)
         !debug || @show iter, dp_state
         !debug || @show in(dp_state.path, routes)
         if ! in(dp_state.path, routes) && dp_state.cost < - 1e-6
-            add_route!(routes, cost_route, incidence, dp_state.path)
-            sol_y = JuMP.value.(y)
+            add_route!(routes, cost_routes, incidence, dp_state.path)
+            sol_y = y
             sol_routes = routes   
         else 
             println("--- no new route is added. ---")
-            sol_y = JuMP.value.(y)
+            sol_y = y
             sol_routes = routes           
             if !isapprox(dp_state.cost, 0, atol=1e-6)        
                 @warn("The reduced_cost is negative: ", dp_state.cost)

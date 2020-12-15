@@ -14,7 +14,7 @@ mutable struct Pulse
     time    :: Float64
 end
 
-function initial_pulse(origin; cost=0)
+function initialize_pulse(origin; cost=0)
     return Pulse([], origin, cost, 0, 0)
 end
 
@@ -127,12 +127,12 @@ function solveESPPRCpulse(org_pg::PulseGraph)
         lower_bounds = fill(-Inf, length(pg.cost[:,1]), length(time_values))
         best_pulse_labels = Array{Pulse, 1}(undef, length(pg.cost[:,1]))
         for i in eachindex(best_pulse_labels)
-            best_pulse_labels[i] = initial_pulse(i; cost=Inf)
+            best_pulse_labels[i] = initialize_pulse(i; cost=Inf)
         end
 
         _pg = PulseGraph(1, pg.destination, pg.capacity, pg.cost, pg.time, pg.load, pg.early_time, pg.late_time)
-        p = initial_pulse(1)
-        p_star = initial_pulse(1; cost=Inf)
+        p = initialize_pulse(1)
+        p_star = initialize_pulse(1; cost=Inf)
 
         bounding_iteration = 0
 
@@ -257,8 +257,8 @@ function solveESPPRCpulse(org_pg::PulseGraph)
     # @show bounding_counter, bounding_inner_counter
     # println("------Bounding scheme end------------------------------------")
 
-    p = initial_pulse(pg.origin)
-    best_p = initial_pulse(pg.origin; cost=Inf)
+    p = initialize_pulse(pg.origin)
+    best_p = initialize_pulse(pg.origin; cost=Inf)
 
 
     # println("------pulse_procedure start------------------------------------")
