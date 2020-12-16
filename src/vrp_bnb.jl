@@ -114,69 +114,6 @@ end
 
 function solve_vrp_bnb(vrptw::VRPTW_Instance)
 
-    # function solve_cg_rmp_branch!(best_sol::BestIncumbent, active_branches)
-    #     branch_counter += 1
-        
-    #     current_branch = pop!(active_branches)
-    #     arc = select_new_arc(current_branch.branch_mtx)
-    #     @show active_branches.history
-    #     @show arc
-
-    #     sol_y, sol_routes, sol_obj = [], [], Inf
-    #     for arc_value in 0:1
-
-    #         new_history = copy(active_branches.history)
-    #         new_history[arc] = arc_value
-
-    #         @info("New branch: $arc=$arc_value.")
-    #         @show new_history
-            
-    #         new_branch_mtx, new_routes, new_vrptw = generate_branch_instance(arc, arc_value, current_branch)
-            
-    #         if isempty(new_routes)
-    #             sol_y, sol_routes, sol_obj = [], [], Inf
-    #         else
-    #             sol_y, sol_routes, sol_obj = solve_cg_rmp(new_vrptw, initial_routes=new_routes)
-    #         end
-
-    #         if isempty(sol_y)
-    #             # stop. Infeasible
-    #             printstyled("*****[bnb]********** Infeasible.\n", color=:red)
-
-    #         elseif is_binary(sol_y)
-    #             printstyled("*****[bnb]********** Binary. $sol_obj (Best=$(best_sol.objective)).\n", color=:yellow)
-    #             if sol_obj < best_sol.objective
-    #                 printstyled("*****[bnb]********** New Binary Best $sol_obj.\n", color=:blue)
-    #                 best_sol.y = sol_y
-    #                 best_sol.routes = sol_routes
-    #                 best_sol.objective = sol_obj
-
-    #                 show_current(sol_y, sol_routes)
-    #                 readline()
-
-    #             end
-    #             # stop. a binary feasible solution found. 
-                
-    #         elseif sol_obj < best_sol.objective
-    #             # Still alive. Move on 
-    #             printstyled("*****[bnb]********** Fractional LP Solution Alive. Keep Going $sol_obj (Best=$(best_sol.objective)).\n" , color=:green)
-    #             push!(active_branches, Branch(new_branch_mtx, new_history, new_vrptw, current_branch.root_routes))
-
-    #         else 
-    #             # stop. Bounded. 
-    #             printstyled("*****[bnb]********** Stop. Fathomed. $sol_obj (Best=$(best_sol.objective)).\n" , color=:red)
-
-    #         end
-
-    #         @show active_branches
-            
-    #     end
-
-    # end
-
-
-
-
     function solve_BnB!(best_sol::BestIncumbent, root_branch)
         branches = [root_branch]
         next_branches = Branch[]
@@ -263,19 +200,6 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance)
     
 
 
-    rrr = Dict{Any,Any}([26, 18, 27] => 31.622776601683793,[26, 2, 15, 22, 4, 25, 27] => 104.4945435870697,[26, 3, 9, 20, 1, 27] => 80.26498837669531,[26, 8, 17, 5, 27] => 70.79272590208579,[26, 7, 11, 19, 10, 27] => 83.77936881542583,[26, 14, 16, 6, 13, 27] => 79.47512515134756,[26, 21, 23, 24, 12, 27] => 97.67828935632369)
-
-    cccc = []
-    for (r, v) in rrr 
-        ccc = route_cost(r, vrptw.travel_time)
-        @show r, ccc
-        push!(cccc, ccc)
-    end
-    @show sum(cccc)
-    @assert sum(cccc) == 548.1078177906317
-
-
-
 
     # [26, 18, 27]               => 31.6228
     # [26, 2, 15, 22, 4, 25, 27] => 104.495
@@ -292,15 +216,6 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance)
 
     # solve root node 
     root_y, root_routes, root_obj = solve_cg_rmp(vrptw, initial_routes=[])
-
-
-    rrr = Dict{Any,Any}([26, 18, 27] => 31.622776601683793,[26, 2, 15, 22, 4, 25, 27] => 104.4945435870697,[26, 3, 9, 20, 1, 27] => 80.26498837669531,[26, 8, 17, 5, 27] => 70.79272590208579,[26, 7, 11, 19, 10, 27] => 83.77936881542583,[26, 14, 16, 6, 13, 27] => 79.47512515134756,[26, 21, 23, 24, 12, 27] => 97.67828935632369)
-
-    cccc = []
-    for (r, v) in rrr 
-        @show r, in(r, root_routes)
-    end
-
 
     show_current(root_y, root_routes)
 

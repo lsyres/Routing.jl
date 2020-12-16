@@ -54,7 +54,7 @@ end
 
 # solomon_vrptw = generate_solomon_vrptw_instance("RC102_025")
 
-solomon_vrptw = generate_solomon_vrptw_instance("R102_025")
+solomon_vrptw = generate_solomon_vrptw_instance("R102_050")
 
 
 @time sol_y, sol_routes, sol_obj = solve_vrp_bnb(solomon_vrptw)
