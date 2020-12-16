@@ -38,12 +38,14 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial
     set_C = 1:n_customers
 
     # add service time to the cost matrix
-    cost_mtx = vrptw.travel_time
+    cost_mtx = copy(vrptw.travel_time)
+
+    time_mtx = copy(vrptw.travel_time)
     for i in set_N, j in set_N
         if i in set_C
-            cost_mtx[i, j] = cost_mtx[i, j] + vrptw.service_time[i]
+            time_mtx[i, j] = time_mtx[i, j] + vrptw.service_time[i]
         else 
-            cost_mtx[i, j] = cost_mtx[i, j]
+            time_mtx[i, j] = time_mtx[i, j]
         end
     end
 
@@ -82,12 +84,18 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial
         append!(incidence, inc)    
     end
 
-    routes = deepcopy(initial_routes)
+    routes = []
     cost_routes = []
     incidence = ElasticArray{Float64}(undef, n_customers, 0)
-    for c in set_C
-        new_route = [depot0, c, depot_dummy]
-        add_route!(routes, cost_routes, incidence, new_route)
+    if isempty(initial_routes)
+        for c in set_C
+            new_route = [depot0, c, depot_dummy]
+            add_route!(routes, cost_routes, incidence, new_route)
+        end
+    else
+        for r in initial_routes
+            add_route!(routes, cost_routes, incidence, r)
+        end
     end
 
     sol_routes = []
@@ -98,6 +106,13 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial
     # gurobi_env = Gurobi.Env()
 
     function solve_RMP(routes, cost_routes, incidence; optimizer=GLPK.Optimizer)
+        if cost_routes[1] == Inf 
+            @show routes
+            @show cost_routes
+            @show 
+
+            readline()
+        end
         RMP = Model(GLPK.Optimizer)
         set_R = 1:length(routes)
         set_C = 1:size(incidence, 1)
@@ -105,12 +120,26 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial
         @objective(RMP, Min, sum(cost_routes[r] * y[r] for r in set_R))
         @constraint(RMP, rrc[i in set_C], sum(incidence[i, r] * y[r] for r in set_R) == 1)
         optimize!(RMP)
-        return JuMP.dual.(rrc), JuMP.value.(y), objective_value(RMP)
+
+        # @show primal_status(RMP), dual_status(RMP)
+        # (MathOptInterface.FEASIBLE_POINT, MathOptInterface.FEASIBLE_POINT)
+        # (MathOptInterface.NO_SOLUTION, MathOptInterface.INFEASIBILITY_CERTIFICATE)
+
+        primal_feasible = primal_status(RMP) == JuMP.MOI.FEASIBLE_POINT
+        dual_feasible = dual_status(RMP) == JuMP.MOI.FEASIBLE_POINT
+        is_optimal = primal_feasible &&  dual_feasible
+
+        return JuMP.dual.(rrc), JuMP.value.(y).data, objective_value(RMP), is_optimal
     end
 
 
     for iter in 1:max_iter        
-        dual_var, sol_y, sol_obj = solve_RMP(routes, cost_routes, incidence; optimizer=optimizer)
+        dual_var, sol_y, sol_obj, is_optimal = solve_RMP(routes, cost_routes, incidence; optimizer=optimizer)
+        
+        if !is_optimal 
+            return [], [], Inf
+        end
+
         # α[depot0] is for the depot
         # depot0 is the origin, depot_dummy is the destination
         α = [dual_var; 0.0; 0.0]
@@ -124,7 +153,7 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial
                 cost_mtx_copy[i, j] -= α[i]
             end
         end
-        time_mtx = copy(cost_mtx)
+        time_mtx = copy(time_mtx)
 
         # solve ESPPRC
 
@@ -141,13 +170,20 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial
 
         dp_state = solveESPPRCpulse(pg)
 
-        if ! in(dp_state.path, routes) && dp_state.cost < - 1e-6
+        if dp_state.path == [] || dp_state.cost == Inf
+            println("--- There is no feasible path. ---")
+            @show dp_state.path, dp_state.cost
+            sol_y = [] 
+            sol_routes = []
+            sol_obj = Inf
+            break
+        elseif ! in(dp_state.path, routes) && dp_state.cost < - 1e-6
             add_route!(routes, cost_routes, incidence, dp_state.path)
             sol_routes = routes   
         else 
             println("--- no new route is added. ---")
             sol_routes = routes           
-            if !isapprox(dp_state.cost, 0, atol=1e-6)        
+            if dp_state.cost < - 1e-6
                 @warn("The reduced_cost is negative: ", dp_state.cost)
             end
             break
@@ -156,6 +192,9 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial
         println("Reduced cost: ", dp_state.cost)
 
     end
+
+
+    sol_y = Array(sol_y)
 
     return sol_y, sol_routes, sol_obj
 

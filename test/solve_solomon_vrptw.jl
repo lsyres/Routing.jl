@@ -52,10 +52,14 @@ end
 
 
 
+# solomon_vrptw = generate_solomon_vrptw_instance("RC102_025")
 
-solomon_vrptw = generate_solomon_vrptw_instance("R101_025")
+solomon_vrptw = generate_solomon_vrptw_instance("R102_025")
+
+
 @time sol_y, sol_routes, sol_obj = solve_vrp_bnb(solomon_vrptw)
 
+@show sol_obj
 for n in 1:length(sol_y)
     if sol_y[n] > 0.01
         @show n, sol_y[n], sol_routes[n]
