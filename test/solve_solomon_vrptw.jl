@@ -92,7 +92,7 @@ end
 
 # solomon_vrptw = generate_solomon_vrptw_instance("RC102_025")
 
-solomon = generate_solomon_vrptw_instance("R101_050")
+solomon = generate_solomon_vrptw_instance("R102_025")
 
 start_time = time()
 @time sol_y, sol_routes, sol_obj = solve_vrp_bnb(solomon.vrptw, tw_reduce=false);
