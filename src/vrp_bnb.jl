@@ -7,6 +7,8 @@ struct Branch
     history::OrderedDict
     vrptw_instance::VRPTW_Instance
     root_routes::Array
+    branch_priority::Array
+    lower_bound::Float64
 end
 
 # branch and bound
@@ -57,6 +59,26 @@ end
 #     deleteat!(routes, routes_to_be_removed)
 # end
 
+function update_travel_time!(new_vrptw, arc::Tuple{Int, Int}, value::Int)
+    i, j = arc
+    n_nodes = size(new_vrptw.travel_time, 1)
+    depot0 = n_nodes - 1
+    depot_dummy = n_nodes
+    
+    if value == 0
+        new_vrptw.travel_time[i, j] = Inf
+    elseif value == 1
+        for k in 1:n_nodes
+            if k != i && k != depot0 && j != depot_dummy
+                new_vrptw.travel_time[k, j] = Inf
+            end
+            if k != j && k != depot_dummy && i != depot0
+                new_vrptw.travel_time[i, k] = Inf
+            end
+        end
+    end
+end
+
 function generate_branch_instance(arc::Tuple{Int, Int}, value::Int, current_branch)
     i, j = arc
 
@@ -68,21 +90,7 @@ function generate_branch_instance(arc::Tuple{Int, Int}, value::Int, current_bran
 
     new_branch_mtx[i, j] = value
     
-    depot0 = n_nodes - 1
-    depot_dummy = n_nodes
-    
-    if value == 0
-        new_vrptw.travel_time[i, j] = Inf
-    elseif value == 1
-        for k in 1:n_nodes
-            if k != i && k != depot0
-                new_vrptw.travel_time[k, j] = Inf
-            end
-            if k != j && k != depot_dummy
-                new_vrptw.travel_time[i, k] = Inf
-            end
-        end
-    end
+    update_travel_time!(new_vrptw, arc, value)
 
     remove_arc_in_routes!(new_routes, new_vrptw.travel_time)
 
@@ -90,10 +98,20 @@ function generate_branch_instance(arc::Tuple{Int, Int}, value::Int, current_bran
 end
 
 
-function select_new_arc(branching_arcs)
-    idx = findfirst(isequal(-1), branching_arcs)
-    arc = (idx[1], idx[2])
-    return arc
+function select_new_arc(branching_arcs, branch_priority)
+    new_branch_priority = copy(branch_priority)
+
+    if isempty(branch_priority)
+        idx = findfirst(isequal(-1), branching_arcs)
+        arc = (idx[1], idx[2])
+    else
+        arc = pop!(new_branch_priority)[1]
+        while branching_arcs[arc[1], arc[2]] != -1
+            arc = pop!(new_branch_priority)[1]
+        end
+    end
+
+    return arc, new_branch_priority
 end
 
 mutable struct BestIncumbent
@@ -120,11 +138,9 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance)
 
         while !isempty(branches)
             branch_counter += 1
-
+            sort!(branches, by= x->x.lower_bound, rev=true)
             current_branch = pop!(branches)
-            arc = select_new_arc(current_branch.branch_mtx)
-            @show current_branch.history
-            @show arc
+            arc, new_branch_priority = select_new_arc(current_branch.branch_mtx, current_branch.branch_priority)
 
             sol_y, sol_routes, sol_obj = [], [], Inf
             for arc_value in 0:1
@@ -132,12 +148,14 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance)
                 new_history = copy(current_branch.history)
                 new_history[arc] = arc_value
 
+                println("-------------------------------------------------")
                 @info("New branch: $arc=$arc_value.")
                 @show new_history
             
                 new_branch_mtx, new_routes, new_vrptw = generate_branch_instance(arc, arc_value, current_branch)
                 
                 if isempty(new_routes)
+                    # println("new_routes is empty.")
                     sol_y, sol_routes, sol_obj = [], [], Inf
                 else
                     sol_y, sol_routes, sol_obj = solve_cg_rmp(new_vrptw, initial_routes=new_routes)
@@ -156,7 +174,7 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance)
                         best_sol.objective = sol_obj
 
                         show_current(sol_y, sol_routes)
-                        readline()
+                        # readline()
 
                     end
                     # stop. a binary feasible solution found. 
@@ -164,7 +182,8 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance)
                 elseif sol_obj < best_sol.objective
                     # Still alive. Move on 
                     printstyled("*****[bnb]********** Fractional LP Solution Alive. Keep Going $sol_obj (Best=$(best_sol.objective)).\n" , color=:green)
-                    push!(next_branches, Branch(new_branch_mtx, new_history, new_vrptw, current_branch.root_routes))
+                    push!(next_branches, Branch(new_branch_mtx, new_history, new_vrptw, 
+                                                current_branch.root_routes, new_branch_priority, sol_obj))
 
                 else 
                     # stop. Bounded. 
@@ -172,44 +191,70 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance)
 
                 end
 
-                @show length(branches), length(next_branches)
+                # @show length(branches), length(next_branches)
             end
 
             if isempty(branches)
                 branches = deepcopy(next_branches)
                 next_branches = Branch[]
             end
+
+            # readline()
+
             
         end
 
     end
 
 
-    function show_optimal_obj_val(travel_time)
-        rrr = Dict{Any,Any}([26, 18, 27] => 31.622776601683793,[26, 2, 15, 22, 4, 25, 27] => 104.4945435870697,[26, 3, 9, 20, 1, 27] => 80.26498837669531,[26, 8, 17, 5, 27] => 70.79272590208579,[26, 7, 11, 19, 10, 27] => 83.77936881542583,[26, 14, 16, 6, 13, 27] => 79.47512515134756,[26, 21, 23, 24, 12, 27] => 97.67828935632369)
-
-        cccc = []
-        for (rrr, val) in rrr 
-            ccc = route_cost(rrr, travel_time)
-            @show rrr, ccc
-            push!(cccc, ccc)
-        end
-        @show sum(cccc)
-        @assert sum(cccc) == 548.1078177906317
+    function generate_branch_priority(root_y, root_routes)
+        branch_score_dict = Dict()
+        for n in eachindex(root_y)
+            if root_y[n] > 0.01
+                r = root_routes[n]
+                for i in 1:length(r)-1
+                    arc = (r[i], r[i+1])
+                    if in(arc, keys(branch_score_dict))
+                        branch_score_dict[arc] += root_y[n]
+                    else
+                        branch_score_dict[arc] = root_y[n]
+                    end
+                end
+            end
+        end        
+        return sort(collect(branch_score_dict), by= x->x[2])
     end
-    
 
+    function initial_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
+        branch_priority = generate_branch_priority(root_y, root_routes)
+        
+        new_vrptw = deepcopy(vrptw)
 
+        # Let branch-and-bound begin
+        # if -1, then it is not yet branched. 
+        # diagonal terms are set to zero.
+        branch_mtx = fill(-1, size(new_vrptw.travel_time))
+        for i in 1:size(branch_mtx, 1)
+            branch_mtx[i, i] = 0
+        end
+        history = OrderedDict()
 
-    # [26, 18, 27]               => 31.6228
-    # [26, 2, 15, 22, 4, 25, 27] => 104.495
-    # [26, 3, 9, 20, 1, 27]      => 80.265
-    # [26, 8, 17, 5, 27]         => 70.7927
-    # [26, 7, 11, 19, 10, 27]    => 83.7794
-    # [26, 14, 16, 6, 13, 27]    => 79.4751
-    # [26, 21, 23, 24, 12, 27]   => 97.6783
+        for n in eachindex(root_y)
+            if root_y[n] > 1.0 - 1e-6
+                r = root_routes[n]
+                for i in 1:length(r)-1
+                    arc = (r[i], r[i+1])
+                    branch_mtx[r[i], r[i+1]] = 1
+                    history[arc] = 1
+                    update_travel_time!(new_vrptw, arc, 1)
+                end
+            end
+        end                
 
+        initial_branch = Branch(branch_mtx, history, new_vrptw, root_routes, branch_priority, root_obj)
 
+        solve_BnB!(best_sol, initial_branch)        
+    end
 
     # initialization
     best_sol = BestIncumbent([], [], Inf)
@@ -223,7 +268,7 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance)
 
     branch_counter = 0
 
-    readline()
+    # readline()
 
 
     if is_binary(root_y)
@@ -231,6 +276,15 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance)
         best_sol.routes = root_routes 
         best_sol.objective = root_obj
     else            
+
+        initial_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
+
+        @info("Initial BnB is done.")
+        # readline()
+
+        # Most Priority is at the end.
+        branch_priority = generate_branch_priority(root_y, root_routes)
+
         # Let branch-and-bound begin
         # if -1, then it is not yet branched. 
         # diagonal terms are set to zero.
@@ -240,7 +294,7 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance)
         end
         history = OrderedDict()
 
-        root_branch = Branch(branch_mtx, history, vrptw, root_routes)
+        root_branch = Branch(branch_mtx, history, vrptw, root_routes, branch_priority, root_obj)
 
         solve_BnB!(best_sol, root_branch)
     end

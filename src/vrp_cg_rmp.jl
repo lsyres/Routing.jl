@@ -106,13 +106,6 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial
     # gurobi_env = Gurobi.Env()
 
     function solve_RMP(routes, cost_routes, incidence; optimizer=GLPK.Optimizer)
-        if cost_routes[1] == Inf 
-            @show routes
-            @show cost_routes
-            @show 
-
-            readline()
-        end
         RMP = Model(GLPK.Optimizer)
         set_R = 1:length(routes)
         set_C = 1:size(incidence, 1)
@@ -144,7 +137,7 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial
         # depot0 is the origin, depot_dummy is the destination
         α = [dual_var; 0.0; 0.0]
         
-        @info("---- iteration $iter -----(n_routes = $(length(routes))-----(obj = $sol_obj)---------------")
+        # @info("---- iteration $iter -----(n_routes = $(length(routes))-----(obj = $sol_obj)---------------")
 
         # Create a new cost_mtx 
         cost_mtx_copy = copy(cost_mtx)
@@ -172,7 +165,7 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial
 
         if dp_state.path == [] || dp_state.cost == Inf
             println("--- There is no feasible path. ---")
-            @show dp_state.path, dp_state.cost
+            # @show dp_state.path, dp_state.cost
             sol_y = [] 
             sol_routes = []
             sol_obj = Inf
@@ -181,15 +174,15 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial
             add_route!(routes, cost_routes, incidence, dp_state.path)
             sol_routes = routes   
         else 
-            println("--- no new route is added. ---")
+            # println("--- no new route is added. ---")
             sol_routes = routes           
             if dp_state.cost < - 1e-6
-                @warn("The reduced_cost is negative: ", dp_state.cost)
+                @warn("No new route is added, but the reduced_cost is negative: ", dp_state.cost)
             end
             break
         end
-        println("New path: ", dp_state.path)
-        println("Reduced cost: ", dp_state.cost)
+        # println("New path: ", dp_state.path)
+        # println("Reduced cost: ", dp_state.cost)
 
     end
 
