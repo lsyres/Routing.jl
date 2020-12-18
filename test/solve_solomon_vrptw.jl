@@ -1,8 +1,5 @@
 using VRPTW
 
-using PyPlot 
-
-
 struct SolomonDataset
     vrptw::VRPTW_Instance
     data_name::String
@@ -98,7 +95,10 @@ start_time = time()
 end_time = time()
 duration = end_time - start_time
 
-plot_solomon_solution(solomon, sol_y, sol_routes, sol_obj, duration)
+
+
+# using PyPlot 
+# plot_solomon_solution(solomon, sol_y, sol_routes, sol_obj, duration)
 
 
 # @show sol_obj
