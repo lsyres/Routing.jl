@@ -1,14 +1,8 @@
-using LightXML
 
 to_int(x::String) = parse(Int, x)
 to_float(x::String) = parse(Float64, x)
 
-struct Node
-    id::Int
-    type::Int
-    cx::Float64
-    cy::Float64
-end
+
 
 distance(n1::Node, n2::Node) = sqrt((n1.cx - n2.cx)^2 + (n1.cy - n2.cy)^2)
 
@@ -25,23 +19,6 @@ function calculate_cost(node::Array{Node})
     return cost
 end
 
-struct Fleet 
-    type::Int
-    number::Int
-    departure_node::Int
-    arrival_node::Int
-    capacity::Float64
-    max_travel_time::Float64
-end
-
-struct Request
-    id::Int
-    node::Int
-    start_time::Int
-    end_time::Int
-    quantity::Float64
-    service_time::Float64
-end
 
 function read_solomon_data(data_filename)
     # data_filename = joinpath("solomon-1987-c1", "C101_100.xml")

@@ -1,8 +1,9 @@
+include("../src/VRPTW.jl")
+
+using Main.VRPTW
 
 using PyPlot 
 
-include("../src/read_solomon_data.jl")
-include("../src/vrp_bnb.jl")
 
 struct SolomonDataset
     vrptw::VRPTW_Instance

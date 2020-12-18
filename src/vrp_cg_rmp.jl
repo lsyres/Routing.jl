@@ -1,17 +1,3 @@
-using JuMP, GLPK
-using ElasticArrays
-
-include("pulse.jl")
-
-struct VRPTW_Instance
-    travel_time     ::Matrix{Float64}
-    service_time    ::Vector{Float64}
-    early_time      ::Vector{Float64}
-    late_time       ::Vector{Float64}
-    load            ::Vector{Float64}
-    capacity        ::Float64
-    max_travel_time ::Float64
-end
 
 
 function time_window_reduction!(vrptw::VRPTW_Instance)

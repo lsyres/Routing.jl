@@ -6,13 +6,7 @@
 # cost, load, time have been updated for [path; next].
 # That is, path is updated by [path; next] later,
 # only after all feasbility & pruning checks.
-mutable struct Pulse
-    path    :: Array{Int64, 1}
-    next    :: Int64
-    cost    :: Float64 
-    load    :: Float64
-    time    :: Float64
-end
+
 
 function initialize_pulse(origin; cost=0)
     return Pulse([], origin, cost, 0, 0)
@@ -26,16 +20,7 @@ function initialize_pulse!(p::Pulse, next; cost=0, path=[])
     p.time = 0
 end
 
-mutable struct PulseGraph
-    origin      :: Int64
-    destination :: Int64
-    capacity    :: Float64
-    cost        :: Matrix{Float64}
-    time        :: Matrix{Float64}
-    load        :: Matrix{Float64}
-    early_time  :: Vector{Float64}
-    late_time   :: Vector{Float64}
-end
+
 
 # Δ bound step size 
 # [time_lb, time_ub] bounding time limits

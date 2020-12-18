@@ -1,14 +1,5 @@
-using DataStructures
 
-include("vrp_cg_rmp.jl")
 
-struct Branch
-    history::OrderedDict
-    vrptw_instance::VRPTW_Instance
-    root_routes::Array
-    branch_priority::Array
-    lower_bound::Float64
-end
 
 # branch and bound
 
@@ -98,11 +89,6 @@ function select_new_arc(branching_history, branch_priority, vrptw::VRPTW_Instanc
     end
 end
 
-mutable struct BestIncumbent
-    y::Vector{Float64}
-    routes::Vector{Vector{Int}}
-    objective::Float64
-end
 
 
 function show_current(sol_y, sol_routes)
