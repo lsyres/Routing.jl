@@ -1,6 +1,4 @@
-include("../src/VRPTW.jl")
-
-using Main.VRPTW
+using VRPTW
 
 using PyPlot 
 
