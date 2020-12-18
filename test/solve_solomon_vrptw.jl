@@ -1,7 +1,16 @@
 
+using PyPlot 
+
 include("../src/read_solomon_data.jl")
 include("../src/vrp_bnb.jl")
 
+struct SolomonDataset
+    vrptw::VRPTW_Instance
+    data_name::String
+    nodes::Vector{Node}
+    fleet::Fleet
+    requests::Vector{Request}
+end
 
 function generate_solomon_vrptw_instance(dataset_name)
     data_file_path = dataset_name * ".xml"
@@ -43,25 +52,54 @@ function generate_solomon_vrptw_instance(dataset_name)
         fleet.max_travel_time
     )
 
-    return vrptw_inst
+    return SolomonDataset(vrptw_inst, data_name, nodes, fleet, requests)
 end
 
 
+function plot_solomon_solution(solomon::SolomonDataset, sol_y, sol_routes, sol_obj)
+    data_name = solomon.data_name
+    nodes = solomon.nodes
 
+    n_nodes = length(nodes)
+    N = 1:n_nodes
 
+    fig = figure() 
+    for i in N 
+        plot(nodes[i].cx, nodes[i].cy, marker=".", color="r", label=i)
+        annotate(i, (nodes[i].cx, nodes[i].cy), textcoords="offset points", xytext=(2,2), ha="center")
+    end
+    for k in 1:length(sol_y)
+        if sol_y[k] > 1 - 1e-6
+            r = sol_routes[k]
+            for n in 1:length(r)-1
+                i, j = r[n], r[n + 1]
+                # plot([node[i].cx, node[j].cx], [node[i].cy, node[j].cy], color="r")
+                dx = nodes[j].cx - nodes[i].cx
+                dy = nodes[j].cy - nodes[i].cy
+                arrow(nodes[i].cx, nodes[i].cy, dx, dy, 
+                    color="b", head_width=0.5, length_includes_head=true)
+            end
+        end
+    end
+    title("$(data_name) by Algorithm: obj=$(sol_obj)")
+    savefig("plots/$(data_name)-Algo.png", dpi=1000)
+    close(fig)
+end
 
 
 
 # solomon_vrptw = generate_solomon_vrptw_instance("RC102_025")
 
-solomon_vrptw = generate_solomon_vrptw_instance("R102_025")
+solomon = generate_solomon_vrptw_instance("R102_025")
+
+@time sol_y, sol_routes, sol_obj = solve_vrp_bnb(solomon.vrptw);
+
+plot_solomon_solution(solomon, sol_y, sol_routes, sol_obj)
 
 
-@time sol_y, sol_routes, sol_obj = solve_vrp_bnb(solomon_vrptw)
-
-@show sol_obj
-for n in 1:length(sol_y)
-    if sol_y[n] > 0.01
-        @show n, sol_y[n], sol_routes[n]
-    end
-end
+# @show sol_obj
+# for n in 1:length(sol_y)
+#     if sol_y[n] > 0.01
+#         @show n, sol_y[n], sol_routes[n]
+#     end
+# end

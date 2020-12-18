@@ -148,9 +148,9 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance)
                 new_history = copy(current_branch.history)
                 new_history[arc] = arc_value
 
-                println("-------------------------------------------------")
-                @info("New branch: $arc=$arc_value.")
-                @show new_history
+                # println("-------------------------------------------------")
+                # @info("New branch: $arc=$arc_value.")
+                # @show new_history
             
                 new_branch_mtx, new_routes, new_vrptw = generate_branch_instance(arc, arc_value, current_branch)
                 
@@ -163,17 +163,17 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance)
 
                 if isempty(sol_y)
                     # stop. Infeasible
-                    printstyled("*****[bnb]********** Infeasible.\n", color=:red)
+                    # printstyled("*****[bnb]********** Infeasible.\n", color=:red)
 
                 elseif is_binary(sol_y)
-                    printstyled("*****[bnb]********** Binary. $sol_obj (Best=$(best_sol.objective)).\n", color=:yellow)
+                    # printstyled("*****[bnb]********** Binary. $sol_obj (Best=$(best_sol.objective)).\n", color=:yellow)
                     if sol_obj < best_sol.objective
-                        printstyled("*****[bnb]********** New Binary Best $sol_obj.\n", color=:blue)
+                        # printstyled("*****[bnb]********** New Binary Best $sol_obj.\n", color=:blue)
                         best_sol.y = sol_y
                         best_sol.routes = sol_routes
                         best_sol.objective = sol_obj
 
-                        show_current(sol_y, sol_routes)
+                        # show_current(sol_y, sol_routes)
                         # readline()
 
                     end
@@ -181,13 +181,13 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance)
                     
                 elseif sol_obj < best_sol.objective
                     # Still alive. Move on 
-                    printstyled("*****[bnb]********** Fractional LP Solution Alive. Keep Going $sol_obj (Best=$(best_sol.objective)).\n" , color=:green)
+                    # printstyled("*****[bnb]********** Fractional LP Solution Alive. Keep Going $sol_obj (Best=$(best_sol.objective)).\n" , color=:green)
                     push!(next_branches, Branch(new_branch_mtx, new_history, new_vrptw, 
                                                 current_branch.root_routes, new_branch_priority, sol_obj))
 
                 else 
                     # stop. Bounded. 
-                    printstyled("*****[bnb]********** Stop. Fathomed. $sol_obj (Best=$(best_sol.objective)).\n" , color=:red)
+                    # printstyled("*****[bnb]********** Stop. Fathomed. $sol_obj (Best=$(best_sol.objective)).\n" , color=:red)
 
                 end
 
@@ -256,32 +256,7 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance)
         solve_BnB!(best_sol, initial_branch)        
     end
 
-    # initialization
-    best_sol = BestIncumbent([], [], Inf)
-
-    # solve root node 
-    root_y, root_routes, root_obj = solve_cg_rmp(vrptw, initial_routes=[])
-
-    show_current(root_y, root_routes)
-
-    @show is_binary(root_y)
-
-    branch_counter = 0
-
-    # readline()
-
-
-    if is_binary(root_y)
-        best_sol.y = root_y 
-        best_sol.routes = root_routes 
-        best_sol.objective = root_obj
-    else            
-
-        initial_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
-
-        @info("Initial BnB is done.")
-        # readline()
-
+    function complete_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
         # Most Priority is at the end.
         branch_priority = generate_branch_priority(root_y, root_routes)
 
@@ -299,6 +274,46 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance)
         solve_BnB!(best_sol, root_branch)
     end
 
-    @show branch_counter
+
+    # initialization
+    best_sol = BestIncumbent([], [], Inf)
+
+    # solve root node 
+    root_y, root_routes, root_obj = solve_cg_rmp(vrptw, initial_routes=[])
+
+
+    @info("Root LP relaxation solution:")
+    @show root_obj
+    show_current(root_y, root_routes)
+    println("Is the root solution binary? ", is_binary(root_y))
+
+    branch_counter = 0
+
+    # readline()
+
+
+    if is_binary(root_y)
+        best_sol.y = root_y 
+        best_sol.routes = root_routes 
+        best_sol.objective = root_obj
+    else            
+
+        initial_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
+
+        @info("Initial BnB is done.")
+        @show branch_counter
+        @show best_sol.objective
+        show_current(best_sol.y, best_sol.routes)
+
+        branch_counter = 0
+        complete_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
+
+        @info("Complete BnB is done.")
+        @show branch_counter
+        @show best_sol.objective
+        show_current(best_sol.y, best_sol.routes)
+
+    end
+
     return best_sol.y, best_sol.routes, best_sol.objective
 end
