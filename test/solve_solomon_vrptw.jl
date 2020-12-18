@@ -83,7 +83,7 @@ function plot_solomon_solution(solomon::SolomonDataset, sol_y, sol_routes, sol_o
     sol_obj = round(sol_obj * 100) / 100
     duration = round(duration * 100) /100
     title("$(data_name) by Algorithm: obj=$(sol_obj), duration=$(duration) s")
-    savefig("plots/$(data_name)-Algo.png", dpi=1000)
+    savefig("$(data_name)-Algo.png", dpi=1000)
     close(fig)
 end
 
