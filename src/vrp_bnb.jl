@@ -130,7 +130,7 @@ function show_current(sol_y, sol_routes)
 end
 
 
-function solve_vrp_bnb(vrptw::VRPTW_Instance)
+function solve_vrp_bnb(vrptw::VRPTW_Instance; tw_reduce=true)
 
     function solve_BnB!(best_sol::BestIncumbent, root_branch)
         branches = [root_branch]
@@ -158,7 +158,7 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance)
                     # println("new_routes is empty.")
                     sol_y, sol_routes, sol_obj = [], [], Inf
                 else
-                    sol_y, sol_routes, sol_obj = solve_cg_rmp(new_vrptw, initial_routes=new_routes)
+                    sol_y, sol_routes, sol_obj = solve_cg_rmp(new_vrptw, initial_routes=new_routes, tw_reduce=false)
                 end
 
                 if isempty(sol_y)
@@ -275,12 +275,18 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance)
     end
 
 
+    # Time Windows Reduction 
+    if tw_reduce
+        time_window_reduction!(vrptw)
+    end
+
     # initialization
     best_sol = BestIncumbent([], [], Inf)
 
     # solve root node 
-    root_y, root_routes, root_obj = solve_cg_rmp(vrptw, initial_routes=[])
-
+    @info("Solving the root LP relaxation...")
+    root_y, root_routes, root_obj = solve_cg_rmp(vrptw, initial_routes=[], tw_reduce=false)
+    @show length(root_routes)
 
     @info("Root LP relaxation solution:")
     @show root_obj

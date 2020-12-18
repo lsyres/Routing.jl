@@ -13,6 +13,37 @@ struct VRPTW_Instance
     max_travel_time ::Float64
 end
 
+
+function time_window_reduction!(vrptw::VRPTW_Instance)
+    n_nodes, n_customers, depot0, depot_dummy = read_vrptw_instance(vrptw::VRPTW_Instance)
+    for iter in 1:3
+        for k in 1:n_customers 
+            # minimal arrival time from predecessors:
+            min_arr_time_pred = minimum( [vrptw.early_time[i] + vrptw.travel_time[i, k] for i in 1:n_customers] )
+            vrptw.early_time[k] = max(vrptw.early_time[k], min(vrptw.late_time[k], min_arr_time_pred))
+
+            # minimal arrival time to successors:
+            min_arr_time_succ = minimum( [vrptw.early_time[j] - vrptw.travel_time[k, j] for j in 1:n_customers] )
+            vrptw.early_time[k] = max(vrptw.early_time[k], min(vrptw.late_time[k], min_arr_time_succ))
+
+            # maximal departure time from predecessors:
+            max_dep_time_pred = maximum( [
+                vrptw.late_time[i] + vrptw.travel_time[i, k] 
+                for i in 1:n_customers if vrptw.travel_time[i, k]<Inf
+            ] )
+            vrptw.late_time[k] = min(vrptw.late_time[k], max(vrptw.early_time[k], max_dep_time_pred))
+
+            # maximal departure time to successors:
+            max_dep_time_succ = maximum( [
+                vrptw.late_time[j] - vrptw.travel_time[k, j]
+                for j in 1:n_customers if vrptw.travel_time[k, j]<Inf
+            ] )
+            vrptw.late_time[k] = min(vrptw.late_time[k], max(vrptw.early_time[k], max_dep_time_succ))
+        end
+    end
+end
+
+
 function read_vrptw_instance(vrptw::VRPTW_Instance)
     @assert size(vrptw.travel_time, 1) == size(vrptw.travel_time, 2)
     n_nodes = size(vrptw.travel_time, 1)
@@ -32,7 +63,11 @@ end
 
 
 
-function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial_routes=[])
+function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial_routes=[], tw_reduce=true)
+    if tw_reduce 
+        time_window_reduction!(vrptw)
+    end
+
     n_nodes, n_customers, depot0, depot_dummy = read_vrptw_instance(vrptw)
     set_N = 1:n_nodes
     set_C = 1:n_customers

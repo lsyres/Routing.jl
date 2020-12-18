@@ -56,7 +56,7 @@ function generate_solomon_vrptw_instance(dataset_name)
 end
 
 
-function plot_solomon_solution(solomon::SolomonDataset, sol_y, sol_routes, sol_obj)
+function plot_solomon_solution(solomon::SolomonDataset, sol_y, sol_routes, sol_obj, duration)
     data_name = solomon.data_name
     nodes = solomon.nodes
 
@@ -81,7 +81,9 @@ function plot_solomon_solution(solomon::SolomonDataset, sol_y, sol_routes, sol_o
             end
         end
     end
-    title("$(data_name) by Algorithm: obj=$(sol_obj)")
+    sol_obj = round(sol_obj * 100) / 100
+    duration = round(duration * 100) /100
+    title("$(data_name) by Algorithm: obj=$(sol_obj), duration=$(duration) s")
     savefig("plots/$(data_name)-Algo.png", dpi=1000)
     close(fig)
 end
@@ -90,11 +92,14 @@ end
 
 # solomon_vrptw = generate_solomon_vrptw_instance("RC102_025")
 
-solomon = generate_solomon_vrptw_instance("R102_025")
+solomon = generate_solomon_vrptw_instance("R101_050")
 
-@time sol_y, sol_routes, sol_obj = solve_vrp_bnb(solomon.vrptw);
+start_time = time()
+@time sol_y, sol_routes, sol_obj = solve_vrp_bnb(solomon.vrptw, tw_reduce=false);
+end_time = time()
+duration = end_time - start_time
 
-plot_solomon_solution(solomon, sol_y, sol_routes, sol_obj)
+plot_solomon_solution(solomon, sol_y, sol_routes, sol_obj, duration)
 
 
 # @show sol_obj
