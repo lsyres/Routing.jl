@@ -15,7 +15,7 @@ include("solomon.jl")
 export Pulse, PulseGraph, VRPTW_Instance, 
         Node, Fleet, Request, SolomonDataset,
         solveESPPRCpulse, solve_vrp_bnb,
-        read_solomon_data, calculate_cost,
+        read_solomon_data, calculate_solomon_cost,
         load_solomon, generate_solomon_vrptw_instance
 
 

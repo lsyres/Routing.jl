@@ -24,7 +24,7 @@ function generate_solomon_vrptw_instance(solomon::SolomonDataset)
     push!(nodes, nodes[n_nodes])
     depot0 = n_customers + 1
     depot_dummy = n_customers + 2
-    cost = calculate_cost(nodes)
+    cost = calculate_solomon_cost(nodes)
     cost[depot0, depot_dummy] = Inf
     cost[depot_dummy, depot0] = Inf
 

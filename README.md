@@ -78,10 +78,15 @@ This format is consistent with the format used by [VRP-REP.org](http://www.vrp-r
 
 - [Solomon, M.M., 1987. Algorithms for the vehicle routing and scheduling problems with time window constraints. Operations research, 35(2), pp.254-265.](https://doi.org/10.1287/opre.35.2.254)
 
+One important difference is that the node id for the depot is the largest among all nodes, instead of 0. The node id numbering begins with 1.
+
 For an example of loading and solving the Solomon instances, see [test/solve_solomon_vrptw.jl](https://github.com/chkwon/VRPTW.jl/blob/master/test/solve_solomon_vrptw.jl) 
 
-
-*Bugs: Currently, not generating the exact solution reported in the literature. Perhaps a bug in data processing*
+When `SolomonDataset` is used, the distance between two coordinates are calculated by
+```julia
+dist = floor(10 * sqrt( (x1-x2)^2 + (y1-y2)^2 )) / 10
+```
+as described in [this paper](https://doi.org/10.1287/trsc.33.1.101)
 
 
 ### VRPTW Algorithm 
