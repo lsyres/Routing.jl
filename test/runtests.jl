@@ -1,14 +1,17 @@
 using VRPTW
 using Test
 
-include("solve_solomon_vrptw.jl")
+@testset "VRPTW" begin
+    @testset "Solomon Instance Test" begin
+        solomon_dataset_name = "R102_025"
+        solomon = load_solomon(solomon_dataset_name)
+        vrptw = generate_solomon_vrptw_instance(solomon)
 
-@testset "Solomon Instance Test" begin
-    # Write your tests here.
-    solomon = generate_solomon_vrptw_instance("R102_025")
-    @time sol_routes, sol_obj = solve_vrp_bnb(solomon.vrptw, tw_reduce=false);
-    @test isapprox(sol_obj, 548.1078177906317, atol=1e-7)
+        @time routes, objective_value = solve_vrp_bnb(vrptw);
+        @test isapprox(objective_value, 548.1078177906317, atol=1e-7)
+    end
+
+    include("or-tools-example.jl")
+    include("espprc-example.jl")
 
 end
-
-include("or-tools-example.jl")

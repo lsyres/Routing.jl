@@ -10,11 +10,13 @@ include("read_solomon_data.jl")
 include("pulse.jl")
 include("vrp_cg_rmp.jl")
 include("vrp_bnb.jl")
+include("solomon.jl")
 
 export Pulse, PulseGraph, VRPTW_Instance, 
-        Node, Fleet, Request,
+        Node, Fleet, Request, SolomonDataset,
         solveESPPRCpulse, solve_vrp_bnb,
-        read_solomon_data, calculate_cost
+        read_solomon_data, calculate_cost,
+        load_solomon, generate_solomon_vrptw_instance
 
 
 end # module

@@ -83,4 +83,14 @@ struct Request
     service_time::Float64
 end
 
+struct SolomonDataset
+    data_name::String
+    nodes::Vector{Node}
+    fleet::Fleet
+    requests::Vector{Request}
+end
+
 ################################################
+
+
+
