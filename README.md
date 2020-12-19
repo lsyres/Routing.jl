@@ -82,7 +82,7 @@ One important difference is that the node id for the depot is the largest among 
 
 For an example of loading and solving the Solomon instances, see [test/solve_solomon_vrptw.jl](https://github.com/chkwon/VRPTW.jl/blob/master/test/solve_solomon_vrptw.jl) 
 
-![Solution of R101_025](R101_025.png)
+<img src="https://github.com/chkwon/VRPTW.jl/raw/master/R102_025.png" width=500>
 
 
 When `SolomonDataset` is used, the distance between two coordinates are calculated by
