@@ -221,7 +221,7 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance; tw_reduce=true)
     best_sol = BestIncumbent([], [], Inf)
 
     # solve root node 
-    @info("Solving the root LP relaxation...")
+    @info("Solving the root LP relaxation with column generation...")
     root_y, root_routes, root_obj = solve_cg_rmp(vrptw, initial_routes=[], tw_reduce=false)
     println("Root node solved. Cumulative Time: ", time() - start_time)
     @show length(root_routes)
