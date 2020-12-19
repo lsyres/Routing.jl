@@ -82,11 +82,16 @@ One important difference is that the node id for the depot is the largest among 
 
 For an example of loading and solving the Solomon instances, see [test/solve_solomon_vrptw.jl](https://github.com/chkwon/VRPTW.jl/blob/master/test/solve_solomon_vrptw.jl) 
 
+![Solution of R101_025](R101_025.png)
+
+
 When `SolomonDataset` is used, the distance between two coordinates are calculated by
 ```julia
 dist = floor(10 * sqrt( (x1-x2)^2 + (y1-y2)^2 )) / 10
 ```
 as described in [this paper](https://doi.org/10.1287/trsc.33.1.101)
+
+
 
 
 ### VRPTW Algorithm 
