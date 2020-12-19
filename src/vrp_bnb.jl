@@ -209,7 +209,6 @@ end
 
 function solve_vrp_bnb(vrptw::VRPTW_Instance; tw_reduce=true)
 
-
     start_time = time()
 
     # Time Windows Reduction 
@@ -255,5 +254,14 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance; tw_reduce=true)
 
     end
 
-    return best_sol.y, best_sol.routes, best_sol.objective
+
+    final_routes = []
+    for i in eachindex(best_sol.y)
+        if best_sol.y[i] > 1 - 1e-6
+            push!(final_routes, best_sol.routes[i])
+        end
+    end
+    return final_routes, best_sol.objective
+
+    # return best_sol.y, best_sol.routes, best_sol.objective
 end

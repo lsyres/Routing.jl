@@ -91,9 +91,13 @@ end
 solomon = generate_solomon_vrptw_instance("R102_025")
 
 start_time = time()
-@time sol_y, sol_routes, sol_obj = solve_vrp_bnb(solomon.vrptw, tw_reduce=false);
+@time routes, objective_value = solve_vrp_bnb(solomon.vrptw, tw_reduce=false);
 end_time = time()
 duration = end_time - start_time
+
+@show objective_value
+@show routes
+
 
 
 

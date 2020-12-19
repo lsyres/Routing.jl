@@ -12,6 +12,8 @@
 
 ## Solving VRPTW
 
+Example: See [`test/or-tools-example.jl`](https://github.com/chkwon/VRPTW.jl/blob/master/test/or-tools-example.jl).
+
 
 
 ## Solving ESPPRC
