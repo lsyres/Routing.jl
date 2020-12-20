@@ -101,7 +101,7 @@ Currently, this package implements a [Branch-and-Price](https://doi.org/10.1287/
 - Branch-and-Price: [Desrochers, M., Desrosiers, J. and Solomon, M., 1992. A new optimization algorithm for the vehicle routing problem with time windows. Operations research, 40(2), pp.342-354.](https://doi.org/10.1287/opre.40.2.342)
 
 - Branch-and-Cut-and-Price: [Kohl, N., Desrosiers, J., Madsen, O.B., Solomon, M.M. and Soumis, F., 1999. 2-path cuts for the vehicle routing problem with time windows. Transportation Science, 33(1), pp.101-116.](https://doi.org/10.1287/trsc.33.1.101)
-#### To-Do List
+#### Features
 * Branch
   - [ ] number of vehicles
   - [x] each arc flow
@@ -111,6 +111,7 @@ Currently, this package implements a [Branch-and-Price](https://doi.org/10.1287/
 
 * Price
   - [x] ESPPRC by Pulse Algorithm
+  - [x] All columns with negative reduced costs are added at once.
   - [ ] Approximate methods? 
 
 ## Elementary Shortest Path Problem with Resource Constraints (ESPPRC)
