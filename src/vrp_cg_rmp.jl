@@ -183,7 +183,7 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial
         )
 
         best_p, all_negative_reduced_cost_paths = solveESPPRCpulse(pg, all_negative_cost_routes=true)
-        
+
         if best_p.path == [] || best_p.cost == Inf
             println("--- There is no feasible path. ---")
             # @show dp_state.path, dp_state.cost
@@ -208,6 +208,10 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial
                 # In this case, it must be a very small negative value -7.105427357601002e-15
                 break
             end
+            
+        else
+            @assert best_p.cost >= 0.0
+            break
         end
 
 

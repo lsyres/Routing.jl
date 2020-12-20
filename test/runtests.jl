@@ -6,13 +6,10 @@ using Test
         solomon_dataset = Dict(
             "C101_025" => 191.30,
             "C102_025" => 190.30,
-            # "C103_025" => 190.30,
-            # "C201_025" => 214.70,
-            # "C202_025" => 214.70,
-            # "C203_025" => 214.70,
+            "C201_025" => 214.70,
+            "RC105_025" => 411.30,
             "R101_025" => 617.10,
             "R102_025" => 547.10,
-            # "R103_025" => 454.60
         )
 
         for (name, val) in solomon_dataset
@@ -21,6 +18,7 @@ using Test
             vrptw = generate_solomon_vrptw_instance(solomon)
 
             @testset "$name" begin
+                println("-- Solomon Instance $name --")
                 @time routes, objective_value = solve_vrp_bnb(vrptw);
                 @test isapprox(objective_value, val, atol=1e-7)
             end

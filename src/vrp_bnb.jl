@@ -242,6 +242,7 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance; tw_reduce=true)
         @info("Initial BnB is done.")
         println("Initial BnB. Cumulative Time: ", time() - start_time)
         @show best_sol.objective
+        # @show best_sol.y, best_sol.routes
         show_current(best_sol.y, best_sol.routes)
 
         complete_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
