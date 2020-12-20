@@ -210,13 +210,12 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial
             end
             
         else
+            sol_routes = routes
             @assert best_p.cost >= 0.0
             break
         end
 
-
     end
-
 
     sol_y = Array(sol_y)
 

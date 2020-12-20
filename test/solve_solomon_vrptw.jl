@@ -1,4 +1,5 @@
 using VRPTW
+# include("../src/VRPTWdebug.jl")
 
 # To plot
 using PyPlot

@@ -193,8 +193,8 @@ function initial_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
     end                
 
     initial_branch = Branch(history, new_vrptw, root_routes, branch_priority, root_obj)
-
-    solve_BnB!(best_sol, initial_branch)        
+    
+    solve_BnB!(best_sol, initial_branch)
 end
 
 function complete_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
@@ -242,7 +242,6 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance; tw_reduce=true)
         @info("Initial BnB is done.")
         println("Initial BnB. Cumulative Time: ", time() - start_time)
         @show best_sol.objective
-        # @show best_sol.y, best_sol.routes
         show_current(best_sol.y, best_sol.routes)
 
         complete_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)

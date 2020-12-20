@@ -1,7 +1,9 @@
 # Solving VRPTW 
 # The example given by Google OR-Tools https://developers.google.com/optimization/routing/vrp
 
-using VRPTW 
+using VRPTW
+# include("../src/VRPTWdebug.jl")
+
 using Test 
 
 # Given travel time matrix.
@@ -90,6 +92,7 @@ vrptw = VRPTW_Instance(
 
 
 function check_route(r)
+    println("------- Route: $r -------------------------------------------------")
     arrival_time = 0 
     total_load = 0
     total_dist = 0
@@ -112,13 +115,13 @@ function check_route(r)
         @assert arrival_time <= tw[2]
         @assert total_load <= capacity
     end
+    println("-------------------------------------------------------------------------------------------")
+
     return total_dist
 end
 
 for m in 1:length(routes)
     r = routes[m]
-    println("--<Route $m>----")    
-    println(r)
     total_cost = 0
     total_cost += check_route(r)
     @show total_cost

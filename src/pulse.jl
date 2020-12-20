@@ -52,6 +52,15 @@ function isfeasible(pulse::Pulse, pg::PulseGraph)
 
 end
 
+function calculate_time(path::Array, pg::PulseGraph)
+    total_time = 0
+    for k in 1:length(path)-1
+        i, j = path[k], path[k+1]
+        total_time = max(total_time + pg.time[i, j], pg.early_time[j])
+    end
+    return total_time
+end
+
 function should_rollback(p::Pulse, pg::PulseGraph)
     # Section 4.3 Rollback Pruning
     if length(p.path) < 2
@@ -68,11 +77,13 @@ function should_rollback(p::Pulse, pg::PulseGraph)
     cost_p = pg.cost[v_i, v_k] + pg.cost[v_k, v_j] 
     cost_pp = pg.cost[v_i, v_j]
 
-    time_p = pg.time[v_i, v_k] + pg.time[v_k, v_j] 
-    time_pp = pg.time[v_i, v_j]
+    path_p = [p.path; p.next]
+    path_pp = [p.path[1:end-1]; p.next]
 
-    if cost_pp <= cost_p 
-        # && time_pp <= time_p
+    time_p = calculate_time(path_p, pg)
+    time_pp = calculate_time(path_pp, pg)
+
+    if cost_pp <= cost_p && time_pp <= time_p
         # dominated, should rollback
         return true
     else
@@ -112,7 +123,9 @@ function isbounded(p::Pulse, best_p::Pulse, lower_bounds, time_values)
     if k > length(time_values)
         return false
     else
-        bounded = p.cost + lower_bounds[p.next, k] >= upper_bound
+        # The condition below should be strict inequality. 
+        # If it is set >=, then or-tools-example.jl could fail.
+        bounded = p.cost + lower_bounds[p.next, k] > upper_bound
         return bounded
     end
 end
@@ -174,11 +187,17 @@ function pulse_procedure!(v_i::Int, p::Pulse, best_p::Pulse, neg_cost_sols::Vect
 
     if !isfeasible(p, pg) 
         return
-    elseif isbounded(p, best_p, lower_bounds, time_values)
-        return
-    elseif should_rollback(p, pg)
-        return
+    elseif p.next != pg.destination 
+        
+        if isbounded(p, best_p, lower_bounds, time_values)
+            return
+        elseif should_rollback(p, pg) 
+            return
+        end
+
     end
+
+
 
     # Update the best route found so far
     if p.next == pg.destination 
