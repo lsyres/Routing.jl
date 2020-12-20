@@ -1,6 +1,5 @@
 using VRPTW
 
-
 # To plot
 using PyPlot
 

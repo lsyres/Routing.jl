@@ -23,6 +23,13 @@ mutable struct Pulse
     time    :: Float64
 end
 
+function Base.show(io::IO, p::Pulse)
+    println("Pulse -> path=$(p.path)")
+    println("         next=$(p.next)")
+    println("         cost=$(p.cost)")
+    println("         load=$(p.load)")
+    println("         time=$(p.time)")
+end
 mutable struct PulseGraph
     origin      :: Int64
     destination :: Int64

@@ -141,16 +141,16 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial
 
         primal_feasible = primal_status(RMP) == JuMP.MOI.FEASIBLE_POINT
         dual_feasible = dual_status(RMP) == JuMP.MOI.FEASIBLE_POINT
-        is_optimal = primal_feasible &&  dual_feasible
+        is_rmp_optimal = primal_feasible &&  dual_feasible
 
-        return JuMP.dual.(rrc), JuMP.value.(y).data, objective_value(RMP), is_optimal
+        return JuMP.dual.(rrc), JuMP.value.(y).data, objective_value(RMP), is_rmp_optimal
     end
 
 
     for iter in 1:max_iter        
-        dual_var, sol_y, sol_obj, is_optimal = solve_RMP(routes, cost_routes, incidence; optimizer=optimizer)
+        dual_var, sol_y, sol_obj, is_rmp_optimal = solve_RMP(routes, cost_routes, incidence; optimizer=optimizer)
         
-        if !is_optimal 
+        if !is_rmp_optimal 
             return [], [], Inf
         end
 
@@ -182,28 +182,34 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial
             late_time,
         )
 
-        dp_state = solveESPPRCpulse(pg)
-
-        if dp_state.path == [] || dp_state.cost == Inf
+        best_p, all_negative_reduced_cost_paths = solveESPPRCpulse(pg, all_negative_cost_routes=true)
+        
+        if best_p.path == [] || best_p.cost == Inf
             println("--- There is no feasible path. ---")
             # @show dp_state.path, dp_state.cost
             sol_y = [] 
             sol_routes = []
             sol_obj = Inf
             break
-        elseif ! in(dp_state.path, routes) && dp_state.cost < - 1e-6
-            add_route!(routes, cost_routes, incidence, dp_state.path)
-            sol_routes = routes   
-        else 
-            # println("--- no new route is added. ---")
-            sol_routes = routes           
-            if dp_state.cost < - 1e-6
-                @warn("No new route is added, but the reduced_cost is negative: ", dp_state.cost)
+        elseif !isempty(all_negative_reduced_cost_paths)
+            is_new_route_generated = false
+            for neg_p in all_negative_reduced_cost_paths
+                if ! in(neg_p.path, routes) 
+                    # @assert neg_p.cost < 0 
+                    add_route!(routes, cost_routes, incidence, neg_p.path)
+                    sol_routes = routes   
+                    is_new_route_generated = true
+                end
             end
-            break
+
+            if !is_new_route_generated
+                sol_routes = routes      
+                # @warn("No new route is added, but there are some routes with negative reduced cost.")
+                # In this case, it must be a very small negative value -7.105427357601002e-15
+                break
+            end
         end
-        # println("New path: ", dp_state.path)
-        # println("Reduced cost: ", dp_state.cost)
+
 
     end
 
