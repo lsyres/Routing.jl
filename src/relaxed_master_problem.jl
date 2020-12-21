@@ -198,7 +198,10 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-
             late_time,
         )
 
-        best_p, all_negative_reduced_cost_paths = solveESPPRCpulse(pg, all_negative_cost_routes=true)
+        best_p, all_negative_reduced_cost_paths = solveESPPRCpulse(pg, max_neg_cost_routes=400)
+
+        println("-- # negative reduced cost paths: $(length(all_negative_reduced_cost_paths))")
+        added_path_counter = 0
 
         if best_p.path == [] || best_p.cost == Inf
             println("--- There is no feasible path. ---")
@@ -211,12 +214,15 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-
             is_new_route_generated = false
             for neg_p in all_negative_reduced_cost_paths
                 if ! in(neg_p.path, routes) 
+                    added_path_counter += 1
                     # @assert neg_p.cost < 0 
                     add_route!(routes, cost_routes, incidence, neg_p.path)
                     sol_routes = routes   
                     is_new_route_generated = true
                 end
             end
+
+            println("-- # new added paths: $(added_path_counter)")
 
             if !is_new_route_generated
                 sol_routes = routes      
@@ -227,12 +233,16 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-
             
         else
             sol_routes = routes
-            @assert best_p.cost >= 0.0
+            # If pulse limits the number of negative reduced cost paths
+            # the assertion below is not true.
+            # @assert best_p.cost >= 0.0
             break
         end
 
     end
 
+
+    println("-- Total columns = $(length(sol_routes))")
     sol_y = Array(sol_y)
 
     return sol_y, sol_routes, sol_obj

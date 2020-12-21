@@ -131,7 +131,7 @@ function isbounded(p::Pulse, best_p::Pulse, lower_bounds, time_values)
 end
 
     
-function bounding_scheme(pg::PulseGraph)
+function bounding_scheme(pg::PulseGraph, max_neg_cost_routes)
     time_ub = pg.late_time[pg.destination]
     time_lb = 0.1 * time_ub
     Δ = Int(floor((time_ub-time_lb) / 15))
@@ -160,7 +160,7 @@ function bounding_scheme(pg::PulseGraph)
             p_star = best_pulse_labels[v_i]
             _pg.origin = v_i
 
-            pulse_procedure!(v_i, p, p_star, Pulse[], lower_bounds, time_values, _pg)
+            pulse_procedure!(v_i, p, p_star, Pulse[], lower_bounds, time_values, _pg, max_neg_cost_routes)
             if p_star.path == [] 
                 lower_bounds[v_i, k] = Inf
             else
@@ -177,9 +177,13 @@ function bounding_scheme(pg::PulseGraph)
     return lower_bounds, time_values
 end
 
-function pulse_procedure!(v_i::Int, p::Pulse, best_p::Pulse, neg_cost_sols::Vector{Pulse}, lower_bounds, time_values, pg::PulseGraph)
+function pulse_procedure!(v_i::Int, p::Pulse, best_p::Pulse, neg_cost_sols::Vector{Pulse}, lower_bounds, time_values, pg::PulseGraph, max_neg_cost_routes)
     # v_i = current node
     @assert v_i == p.next
+
+    if length(neg_cost_sols) >= max_neg_cost_routes
+        return 
+    end
 
     if p.time < pg.early_time[v_i]
         p.time = pg.early_time[v_i]
@@ -196,8 +200,6 @@ function pulse_procedure!(v_i::Int, p::Pulse, best_p::Pulse, neg_cost_sols::Vect
         end
 
     end
-
-
 
     # Update the best route found so far
     if p.next == pg.destination 
@@ -230,26 +232,26 @@ function pulse_procedure!(v_i::Int, p::Pulse, best_p::Pulse, neg_cost_sols::Vect
             pp.cost += pg.cost[v_i, v_j]
             pp.load += pg.load[v_i, v_j]
             pp.time = max(pg.early_time[v_j], pp.time + pg.time[v_i, v_j]) 
-            pulse_procedure!(v_j, pp, best_p, neg_cost_sols, lower_bounds, time_values, pg)
+            pulse_procedure!(v_j, pp, best_p, neg_cost_sols, lower_bounds, time_values, pg, max_neg_cost_routes)
         end
     end
 
     # 
 end
 
-function solveESPPRCpulse(org_pg::PulseGraph; all_negative_cost_routes=false)
+function solveESPPRCpulse(org_pg::PulseGraph; max_neg_cost_routes=Inf)
     pg = deepcopy(org_pg)
     graph_reduction!(pg)
 
-    lower_bounds, time_values = bounding_scheme(pg)
+    lower_bounds, time_values = bounding_scheme(pg, max_neg_cost_routes)
 
     p = initialize_pulse(pg.origin)
     best_p = initialize_pulse(pg.origin; cost=Inf)
 
     neg_cost_sols = Vector{Pulse}(undef,0)
-    pulse_procedure!(pg.origin, p, best_p, neg_cost_sols, lower_bounds, time_values, pg)
+    pulse_procedure!(pg.origin, p, best_p, neg_cost_sols, lower_bounds, time_values, pg, max_neg_cost_routes)
 
-    if all_negative_cost_routes
+    if max_neg_cost_routes < Inf
         return best_p, neg_cost_sols
     else
         return best_p
