@@ -104,7 +104,7 @@ Currently, this package implements a [Branch-and-Price](https://doi.org/10.1287/
 - Branch-and-Cut-and-Price: [Kohl, N., Desrosiers, J., Madsen, O.B., Solomon, M.M. and Soumis, F., 1999. 2-path cuts for the vehicle routing problem with time windows. Transportation Science, 33(1), pp.101-116.](https://doi.org/10.1287/trsc.33.1.101)
 #### Features
 * Branch
-  - [ ] number of vehicles
+  - [x] number of vehicles
   - [x] each arc flow
 
 * Cut
