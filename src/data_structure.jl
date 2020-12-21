@@ -46,11 +46,12 @@ end
 #  Branch and bounds 
 ################################################
 struct Branch
-    history::OrderedDict
-    vrptw_instance::VRPTW_Instance
-    root_routes::Array
-    branch_priority::Array
-    lower_bound::Float64
+    history         :: OrderedDict
+    vrptw_instance  :: VRPTW_Instance
+    root_routes     :: Array
+    branch_priority :: Array
+    lower_bound     :: Float64
+    veh_cond        :: Tuple{String, Int64}
 end
 
 mutable struct BestIncumbent
