@@ -49,7 +49,7 @@ end
 
 
 
-function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], tw_reduce=true)
+function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], n_vehicles=-1, tw_reduce=true)
     if tw_reduce 
         time_window_reduction!(vrptw)
     end
@@ -58,9 +58,16 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], tw_reduce=true)
     set_N = 1:n_nodes
     set_C = 1:n_customers
 
-    # add service time to the cost matrix
+    # n_vehicles is not given in the beginning
+    # later will be given for branching
+    if n_vehicles == -1
+        n_vehicles = n_customers
+    end
+
+    # cost_mtx only accounts the travel time, not service time
     cost_mtx = copy(vrptw.travel_time)
 
+    # add service time to the time matrix
     time_mtx = copy(vrptw.travel_time)
     for i in set_N, j in set_N
         if i in set_C
@@ -126,13 +133,14 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], tw_reduce=true)
 
     # gurobi_env = Gurobi.Env()
 
-    function solve_RMP(routes, cost_routes, incidence)
+    function solve_RMP(routes, cost_routes, incidence, n_vehicles)
         RMP = Model(GLPK.Optimizer)
         set_R = 1:length(routes)
         set_C = 1:size(incidence, 1)
         @variable(RMP, y[set_R] >= 0)
         @objective(RMP, Min, sum(cost_routes[r] * y[r] for r in set_R))
         @constraint(RMP, rrc[i in set_C], sum(incidence[i, r] * y[r] for r in set_R) == 1)
+        @constraint(RMP, num_vec, sum(y[r] for r in set_R) <= n_vehicles)
         optimize!(RMP)
 
         # @show primal_status(RMP), dual_status(RMP)
@@ -148,7 +156,7 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], tw_reduce=true)
 
 
     for iter in 1:max_iter        
-        dual_var, sol_y, sol_obj, is_rmp_optimal = solve_RMP(routes, cost_routes, incidence)
+        dual_var, sol_y, sol_obj, is_rmp_optimal = solve_RMP(routes, cost_routes, incidence, n_vehicles)
         
         if !is_rmp_optimal 
             return [], [], Inf
@@ -161,10 +169,10 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], tw_reduce=true)
         # @info("---- iteration $iter -----(n_routes = $(length(routes))-----(obj = $sol_obj)---------------")
 
         # Create a new cost_mtx 
-        cost_mtx_copy = copy(cost_mtx)
+        reduced_cost_mtx = copy(cost_mtx)
         for i in set_N, j in set_N 
             if i in set_C
-                cost_mtx_copy[i, j] -= α[i]
+                reduced_cost_mtx[i, j] -= α[i]
             end
         end
         time_mtx = copy(time_mtx)
@@ -175,7 +183,7 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], tw_reduce=true)
             origin,
             destination,
             capacity,
-            cost_mtx_copy,
+            reduced_cost_mtx,
             time_mtx,
             resrc_mtx,
             early_time,
