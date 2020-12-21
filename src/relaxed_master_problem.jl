@@ -200,7 +200,7 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-
 
         best_p, all_negative_reduced_cost_paths = solveESPPRCpulse(pg, max_neg_cost_routes=400)
 
-        println("-- # negative reduced cost paths: $(length(all_negative_reduced_cost_paths))")
+        # println("-- # negative reduced cost paths: $(length(all_negative_reduced_cost_paths))")
         added_path_counter = 0
 
         if best_p.path == [] || best_p.cost == Inf
@@ -222,7 +222,7 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-
                 end
             end
 
-            println("-- # new added paths: $(added_path_counter)")
+            # println("-- # new added paths: $(added_path_counter)")
 
             if !is_new_route_generated
                 sol_routes = routes      

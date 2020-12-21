@@ -38,6 +38,7 @@ end
 # solomon_vrptw = generate_solomon_vrptw_instance("RC102_025")
 
 solomon_dataset_name = "R102_025"
+
 solomon = load_solomon(solomon_dataset_name)
 vrptw = generate_solomon_vrptw_instance(solomon)
 
@@ -50,3 +51,4 @@ duration = end_time - start_time
 @show routes
 
 plot_solomon_solution(solomon, routes, obj_val, duration)
+@show solomon_dataset_name, obj_val, duration
