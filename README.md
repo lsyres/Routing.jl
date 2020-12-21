@@ -5,6 +5,7 @@
 
 *Work in progress...*
 
+This package implements a branch-and-price algorithm for solving Vehicle Routing Problems with Time Windows (VRPTW), where pricing subproblems are solved as Elementary Shortest Path Problems with Resource Constraints (ESPPRC).
 
 
 ## Installation
@@ -142,7 +143,7 @@ See this example for details: [`test/espprc-example.jl`](https://github.com/chkw
 
 This package implements the Pulse algorithm proposed in the following paper:
 
-- [Leonardo Lozano, Daniel Duque, Andrés L. Medaglia (2016) An Exact Algorithm for the Elementary Shortest Path Problem with Resource Constraints. Transportation Science 50(1):348-357.](https://doi.org/10.1287/trsc.2014.0582)
+- [Leonardo Lozano, Daniel Duque, Andrés L. Medaglia (2016) An Exact Algorithm for the Elementary Shortest Path Problem with Resource Constraints. Transportation Science 50(1):348-357.](https://doi.org/10.1287/trsc.2014.0582)
 
 If you need a faster c++ implementation for this algorithm, I recommend https://github.com/DouYishun/vrp-espprc.
 
