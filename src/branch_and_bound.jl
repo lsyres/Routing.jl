@@ -282,16 +282,16 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance; tw_reduce=true)
         best_sol.objective = root_obj
     else            
 
-        # Initial branching 
-        # First branching on the number of vehicles
-        # Then on arc flow, first fixing x_ij = 1 
-        # then branch-and-bound for the rest
-        initial_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
+        # # Initial branching 
+        # # First branching on the number of vehicles
+        # # Then on arc flow, first fixing x_ij = 1 
+        # # then branch-and-bound for the rest
+        # initial_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
 
-        @info("Initial BnB is done.")
-        println("Initial BnB. Cumulative Time: ", time() - start_time)
-        @show best_sol.objective
-        show_current(best_sol.y, best_sol.routes)
+        # @info("Initial BnB is done.")
+        # println("Initial BnB. Cumulative Time: ", time() - start_time)
+        # @show best_sol.objective
+        # show_current(best_sol.y, best_sol.routes)
 
 
         # Complete branching 
