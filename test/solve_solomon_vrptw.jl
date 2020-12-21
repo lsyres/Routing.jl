@@ -41,11 +41,11 @@ solomon = load_solomon(solomon_dataset_name)
 vrptw = generate_solomon_vrptw_instance(solomon)
 
 start_time = time()
-@time routes, objective_value = solve_vrp_bnb(vrptw);
+@time routes, obj_val = solve_vrp_bnb(vrptw);
 end_time = time()
 duration = end_time - start_time
 
-@show objective_value
+@show obj_val
 @show routes
 
-plot_solomon_solution(solomon, routes, objective_value, duration)
+plot_solomon_solution(solomon, routes, obj_val, duration)
