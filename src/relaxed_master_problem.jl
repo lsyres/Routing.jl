@@ -49,7 +49,7 @@ end
 
 
 
-function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial_routes=[], tw_reduce=true)
+function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], tw_reduce=true)
     if tw_reduce 
         time_window_reduction!(vrptw)
     end
@@ -126,7 +126,7 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial
 
     # gurobi_env = Gurobi.Env()
 
-    function solve_RMP(routes, cost_routes, incidence; optimizer=GLPK.Optimizer)
+    function solve_RMP(routes, cost_routes, incidence)
         RMP = Model(GLPK.Optimizer)
         set_R = 1:length(routes)
         set_C = 1:size(incidence, 1)
@@ -148,7 +148,7 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; optimizer = GLPK.Optimizer, initial
 
 
     for iter in 1:max_iter        
-        dual_var, sol_y, sol_obj, is_rmp_optimal = solve_RMP(routes, cost_routes, incidence; optimizer=optimizer)
+        dual_var, sol_y, sol_obj, is_rmp_optimal = solve_RMP(routes, cost_routes, incidence)
         
         if !is_rmp_optimal 
             return [], [], Inf
