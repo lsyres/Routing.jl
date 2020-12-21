@@ -49,7 +49,7 @@ end
 
 
 
-function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], n_vehicles=-1, tw_reduce=true)
+function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-1), tw_reduce=true)
     if tw_reduce 
         time_window_reduction!(vrptw)
     end
@@ -60,8 +60,8 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], n_vehicles=-1, t
 
     # n_vehicles is not given in the beginning
     # later will be given for branching
-    if n_vehicles == -1
-        n_vehicles = n_customers
+    if veh_cond[2] == -1
+        veh_cond = ("<=", n_customers)
     end
 
     # cost_mtx only accounts the travel time, not service time
@@ -133,14 +133,22 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], n_vehicles=-1, t
 
     # gurobi_env = Gurobi.Env()
 
-    function solve_RMP(routes, cost_routes, incidence, n_vehicles)
+    function solve_RMP(routes, cost_routes, incidence, veh_cond)
         RMP = Model(GLPK.Optimizer)
         set_R = 1:length(routes)
         set_C = 1:size(incidence, 1)
+
         @variable(RMP, y[set_R] >= 0)
         @objective(RMP, Min, sum(cost_routes[r] * y[r] for r in set_R))
         @constraint(RMP, rrc[i in set_C], sum(incidence[i, r] * y[r] for r in set_R) == 1)
-        @constraint(RMP, num_vec, sum(y[r] for r in set_R) <= n_vehicles)
+
+        if veh_cond[1] == "<="
+            @constraint(RMP, num_vec, sum(y[r] for r in set_R) <= veh_cond[2])
+        elseif veh_cond[1] == ">="
+            @constraint(RMP, num_vec, sum(y[r] for r in set_R) >= veh_cond[2])
+        else
+            @error("Vehicle conditions should be either '<=' or '>='.")
+        end
         optimize!(RMP)
 
         # @show primal_status(RMP), dual_status(RMP)
@@ -151,12 +159,12 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], n_vehicles=-1, t
         dual_feasible = dual_status(RMP) == JuMP.MOI.FEASIBLE_POINT
         is_rmp_optimal = primal_feasible &&  dual_feasible
 
-        return JuMP.dual.(rrc), JuMP.value.(y).data, objective_value(RMP), is_rmp_optimal
+        return JuMP.dual.(rrc), JuMP.dual(num_vec), JuMP.value.(y).data, objective_value(RMP), is_rmp_optimal
     end
 
 
     for iter in 1:max_iter        
-        dual_var, sol_y, sol_obj, is_rmp_optimal = solve_RMP(routes, cost_routes, incidence, n_vehicles)
+        dual_var, dual_depot, sol_y, sol_obj, is_rmp_optimal = solve_RMP(routes, cost_routes, incidence, veh_cond)
         
         if !is_rmp_optimal 
             return [], [], Inf
@@ -164,14 +172,14 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], n_vehicles=-1, t
 
         # α[depot0] is for the depot
         # depot0 is the origin, depot_dummy is the destination
-        α = [dual_var; 0.0; 0.0]
+        α = [dual_var; dual_depot; 0.0]
         
         # @info("---- iteration $iter -----(n_routes = $(length(routes))-----(obj = $sol_obj)---------------")
 
         # Create a new cost_mtx 
         reduced_cost_mtx = copy(cost_mtx)
         for i in set_N, j in set_N 
-            if i in set_C
+            if i in set_N
                 reduced_cost_mtx[i, j] -= α[i]
             end
         end

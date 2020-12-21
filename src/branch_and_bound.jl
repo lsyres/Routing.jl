@@ -100,13 +100,34 @@ function show_current(sol_y, sol_routes)
 end
 
 
-function solve_BnB!(best_sol::BestIncumbent, root_branch)
-    branches = [root_branch]
+function  branch_decision!(next_branches, best_sol, sol_y, sol_routes, sol_obj, new_branch)
+    if isempty(sol_y)
+        # stop. Infeasible
+
+    elseif is_binary(sol_y)
+        if sol_obj < best_sol.objective
+            best_sol.y = sol_y
+            best_sol.routes = sol_routes
+            best_sol.objective = sol_obj
+        end
+        # stop. a binary feasible solution found. 
+        
+    elseif sol_obj < best_sol.objective
+        # Fractional LP Solution. Still alive. Move on 
+        push!(next_branches, new_branch)
+
+    else 
+        # stop. Fathomed. 
+
+    end
+end
+
+function solve_BnB!(best_sol::BestIncumbent, branches)
     next_branches = Branch[]
 
     while !isempty(branches)
         sort!(branches, by= x->x.lower_bound, rev=true)
-        current_branch = pop!(branches)
+        current_branch = popfirst!(branches)
 
         # current_branch.branching_priority is updated here
         arc, new_branch_priority = select_new_arc(current_branch.history, current_branch.branch_priority, current_branch.vrptw_instance)
@@ -120,30 +141,17 @@ function solve_BnB!(best_sol::BestIncumbent, root_branch)
 
             new_routes, new_vrptw = generate_branch_instance(arc, arc_value, current_branch)
             
+            veh_cond = current_branch.veh_cond
+
             if isempty(new_routes)
                 sol_y, sol_routes, sol_obj = [], [], Inf
             else
-                sol_y, sol_routes, sol_obj = solve_cg_rmp(new_vrptw, initial_routes=new_routes, tw_reduce=false)
-            end
 
-            if isempty(sol_y)
-                # stop. Infeasible
+                sol_y, sol_routes, sol_obj = solve_cg_rmp(new_vrptw, initial_routes=new_routes, veh_cond=veh_cond, tw_reduce=false)
 
-            elseif is_binary(sol_y)
-                if sol_obj < best_sol.objective
-                    best_sol.y = sol_y
-                    best_sol.routes = sol_routes
-                    best_sol.objective = sol_obj
-                end
-                # stop. a binary feasible solution found. 
-                
-            elseif sol_obj < best_sol.objective
-                # Fractional LP Solution. Still alive. Move on 
-                push!(next_branches, Branch(new_history, new_vrptw, 
-                                            current_branch.root_routes, new_branch_priority, sol_obj))
+                new_branch = Branch(new_history, new_vrptw, current_branch.root_routes, new_branch_priority, sol_obj, veh_cond)
 
-            else 
-                # stop. Fathomed. 
+                branch_decision!(next_branches, best_sol, sol_y, sol_routes, sol_obj, new_branch)
 
             end
         end
@@ -192,19 +200,56 @@ function initial_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
         end
     end                
 
-    initial_branch = Branch(history, new_vrptw, root_routes, branch_priority, root_obj)
+
+    branches = []
+    if round(sum(root_y)) == sum(root_y)
+        veh_cond = ("<=", -1)
+        push!(branches, Branch(history, new_vrptw, root_routes, branch_priority, root_obj, veh_cond))
+    else
+        new_routes = copy(root_routes)
+        remove_arc_in_routes!(new_routes, new_vrptw.travel_time)        
+        n_vehicles = floor(sum(root_y)) |> Int 
+        vehicle_conditions = [("<=", n_vehicles), (">=", n_vehicles+1)]                
+        for veh_cond in vehicle_conditions
+            sol_y, sol_routes, sol_obj = solve_cg_rmp(new_vrptw, initial_routes=new_routes, veh_cond=veh_cond, tw_reduce=false)
+
+            new_branch = Branch(history, new_vrptw, root_routes, branch_priority, sol_obj, veh_cond)
+
+            branch_decision!(branches, best_sol, sol_y, sol_routes, sol_obj, new_branch)
+        end
+
+    end
+
+    solve_BnB!(best_sol, branches)
     
-    solve_BnB!(best_sol, initial_branch)
 end
 
 function complete_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
     # Most Priority is at the end.
     branch_priority = generate_branch_priority(root_y, root_routes)
-    history = OrderedDict()
 
-    root_branch = Branch(history, vrptw, root_routes, branch_priority, root_obj)
+    branches = []
+    if round(sum(root_y)) == sum(root_y)
+        veh_cond = ("<=", -1)
+        history = OrderedDict()
+        root_branch = Branch(history, vrptw, root_routes, branch_priority, root_obj, veh_cond)
+        push!(branches, root_branch)
+    else
+        n_vehicles = floor(sum(root_y)) |> Int 
+        vehicle_conditions = [("<=", n_vehicles), (">=", n_vehicles+1)]
+        for veh_cond in vehicle_conditions
+            sol_y, sol_routes, sol_obj = solve_cg_rmp(vrptw, initial_routes=root_routes, veh_cond=veh_cond, tw_reduce=false)
 
-    solve_BnB!(best_sol, root_branch)
+            history = OrderedDict()
+            new_branch = Branch(history, vrptw, root_routes, branch_priority, sol_obj, veh_cond)
+
+            branch_decision!(branches, best_sol, sol_y, sol_routes, sol_obj, new_branch)
+        end
+
+    end
+
+    solve_BnB!(best_sol, branches)
+
 end
 
 function solve_vrp_bnb(vrptw::VRPTW_Instance; tw_reduce=true)
@@ -237,6 +282,10 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance; tw_reduce=true)
         best_sol.objective = root_obj
     else            
 
+        # Initial branching 
+        # First branching on the number of vehicles
+        # Then on arc flow, first fixing x_ij = 1 
+        # then branch-and-bound for the rest
         initial_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
 
         @info("Initial BnB is done.")
@@ -244,11 +293,14 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance; tw_reduce=true)
         @show best_sol.objective
         show_current(best_sol.y, best_sol.routes)
 
+
+        # Complete branching 
+        # First branching on the number of vehicles
+        # Then on arc flow, from the beginning
         complete_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
 
         @info("Complete BnB is done.")
         println("Complete BnB. Cumulative Time: ", time() - start_time)
-
         @show best_sol.objective
         show_current(best_sol.y, best_sol.routes)
 

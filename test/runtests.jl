@@ -1,6 +1,9 @@
 using VRPTW
 using Test
 
+
+test_start_time = time()
+
 @testset "VRPTW" begin
     @testset "Solomon Instance Test" begin
         solomon_dataset = Dict(
@@ -29,3 +32,6 @@ using Test
     include("espprc-example.jl")
 
 end
+
+total_test_time = time() - test_start_time
+@show total_test_time
