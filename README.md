@@ -112,7 +112,8 @@ Currently, this package implements a [Branch-and-Price](https://doi.org/10.1287/
 
 * Price
   - [x] ESPPRC by Pulse Algorithm
-  - [x] All columns with negative reduced costs are added at once.
+  - [ ] ESPPRC by another algorithm
+  - [x] First 400 columns with negative reduced costs were added.
   - [ ] Approximate methods? 
 
 ## Elementary Shortest Path Problem with Resource Constraints (ESPPRC)

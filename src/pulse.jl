@@ -212,7 +212,7 @@ function pulse_procedure!(v_i::Int, p::Pulse, best_p::Pulse, neg_cost_sols::Vect
             best_p.time = p.time
         end
 
-        if p.cost < 0.0
+        if p.cost < 0.0 - 1e-7
             neg_p = deepcopy(p)
             push!(neg_p.path, p.next)
             neg_p.next = -1

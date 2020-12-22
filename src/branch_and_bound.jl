@@ -81,9 +81,9 @@ function select_new_arc(branching_history, branch_priority, vrptw::VRPTW_Instanc
         end
     else
         new_branch_priority = copy(branch_priority)
-        arc = pop!(new_branch_priority)[1]
+        arc = popfirst!(new_branch_priority)[1]
         while in(arc, keys(branching_history)) 
-            arc = pop!(new_branch_priority)[1]
+            arc = popfirst!(new_branch_priority)[1]
         end
         return arc, new_branch_priority
     end
@@ -126,8 +126,11 @@ function solve_BnB!(best_sol::BestIncumbent, branches)
     next_branches = Branch[]
 
     while !isempty(branches)
+
+        # Sorting branches with the lower bound
+        # The last element has the lowest bound
         sort!(branches, by= x->x.lower_bound, rev=true)
-        current_branch = popfirst!(branches)
+        current_branch = pop!(branches)
 
         # current_branch.branching_priority is updated here
         arc, new_branch_priority = select_new_arc(current_branch.history, current_branch.branch_priority, current_branch.vrptw_instance)
@@ -166,7 +169,7 @@ function solve_BnB!(best_sol::BestIncumbent, branches)
 end
 
 
-function generate_branch_priority(root_y, root_routes)
+function generate_branch_priority(root_y, root_routes, vrptw)
     branch_score_dict = Dict()
     for n in eachindex(root_y)
         if root_y[n] > 0.01
@@ -174,9 +177,9 @@ function generate_branch_priority(root_y, root_routes)
             for i in 1:length(r)-1
                 arc = (r[i], r[i+1])
                 if in(arc, keys(branch_score_dict))
-                    branch_score_dict[arc] += root_y[n]
+                    branch_score_dict[arc] += max(1-root_y[n], root_y[n]) * vrptw.travel_time[arc[1], arc[2]]
                 else
-                    branch_score_dict[arc] = root_y[n]
+                    branch_score_dict[arc] = max(1-root_y[n], root_y[n]) * vrptw.travel_time[arc[1], arc[2]]
                 end
             end
         end
@@ -185,7 +188,7 @@ function generate_branch_priority(root_y, root_routes)
 end
 
 function initial_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
-    branch_priority = generate_branch_priority(root_y, root_routes)
+    branch_priority = generate_branch_priority(root_y, root_routes, vrptw)
     new_vrptw = deepcopy(vrptw)
     history = OrderedDict()
 
@@ -226,7 +229,7 @@ end
 
 function complete_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
     # Most Priority is at the end.
-    branch_priority = generate_branch_priority(root_y, root_routes)
+    branch_priority = generate_branch_priority(root_y, root_routes, vrptw)
 
     branches = []
     if round(sum(root_y)) == sum(root_y)
