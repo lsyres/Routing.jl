@@ -10,8 +10,8 @@ using Random
 Random.seed!(123432)
 
 
-# We need to construct a PulseGraph instance
-# mutable struct PulseGraph
+# We need to construct a ESPPRC_Instance instance
+# mutable struct ESPPRC_Instance
 #     origin      :: Int64
 #     destination :: Int64
 #     capacity    :: Float64
@@ -20,6 +20,7 @@ Random.seed!(123432)
 #     load        :: Matrix{Float64}
 #     early_time  :: Vector{Float64}
 #     late_time   :: Vector{Float64}
+#     service_time:: Vector{Float64}
 # end
 
 # This example is modifed from the VRPTW example from OR-Tools
@@ -38,8 +39,6 @@ cost = rand(17, 17) .- 0.5
 # travel_time matrix:
 # Some elements are Inf, meaning disconnected
 # travel_time is used to check the time windows constraints
-# If you have service time in each node, then it should be added to travel_time
-# e.g., travel_time[i,j] = travel_time[i,j] + service_time[i]
 travel_time = Float64[
     0 8 3 2 6 8 4 8 8 13 7 5 8 12 10 Inf 6; 
     8 0 11 10 6 3 9 5 8 4 15 14 13 9 18 9 9; 
@@ -92,6 +91,7 @@ time_windows = [
 ]
 early_time = [time_windows[i][1] for i in 1:n_nodes]
 late_time = [time_windows[i][2] for i in 1:n_nodes]
+service_time = zeros(length(late_time))
 
 # vehicle capacity
 capacity = 15 
@@ -101,7 +101,7 @@ origin, destination = 1, 17
 
 
 # create a PulseGraph instance
-pg = PulseGraph(
+pg = ESPPRC_Instance(
     origin,
     destination,
     capacity,
@@ -109,7 +109,8 @@ pg = PulseGraph(
     travel_time,
     load,
     early_time,
-    late_time
+    late_time,
+    service_time
 )
 
 # solve the ESPPRC 

@@ -25,7 +25,7 @@ end
 # Δ bound step size 
 # [time_lb, time_ub] bounding time limits
 
-function isfeasible(pulse::Pulse, pg::PulseGraph)
+function isfeasible(pulse::Pulse, pg::ESPPRC_Instance)
     # §4.1 Infeasibility Pruning 
     # if pulse_path is empty, feasible 
     if pulse.path == []
@@ -52,16 +52,16 @@ function isfeasible(pulse::Pulse, pg::PulseGraph)
 
 end
 
-function calculate_time(path::Array, pg::PulseGraph)
+function calculate_time(path::Array, pg::ESPPRC_Instance)
     total_time = 0
     for k in 1:length(path)-1
         i, j = path[k], path[k+1]
-        total_time = max(total_time + pg.time[i, j], pg.early_time[j])
+        total_time = max(total_time + pg.service_time[i] + pg.time[i, j], pg.early_time[j])
     end
     return total_time
 end
 
-function should_rollback(p::Pulse, pg::PulseGraph)
+function should_rollback(p::Pulse, pg::ESPPRC_Instance)
     # Section 4.3 Rollback Pruning
     if length(p.path) < 2
         return false
@@ -92,10 +92,10 @@ function should_rollback(p::Pulse, pg::PulseGraph)
     end
 end
 
-function graph_reduction!(pg::PulseGraph)
+function graph_reduction!(pg::ESPPRC_Instance)
     for i in 1:pg.origin-1, j in 1:pg.origin-1
         if i != j 
-            if pg.early_time[i] + pg.time[i, j] > pg.late_time[j]
+            if pg.early_time[i] + pg.service_time[i] + pg.time[i, j] > pg.late_time[j]
                 pg.cost[i, j] = Inf
             end
         end
@@ -131,7 +131,7 @@ function isbounded(p::Pulse, best_p::Pulse, lower_bounds, time_values)
 end
 
     
-function bounding_scheme(pg::PulseGraph, max_neg_cost_routes)
+function bounding_scheme(pg::ESPPRC_Instance, max_neg_cost_routes)
     time_ub = pg.late_time[pg.destination]
     time_lb = 0.1 * time_ub
     Δ = Int(floor((time_ub-time_lb) / 15))
@@ -145,7 +145,7 @@ function bounding_scheme(pg::PulseGraph, max_neg_cost_routes)
         best_pulse_labels[i] = initialize_pulse(i; cost=Inf)
     end
 
-    _pg = PulseGraph(1, pg.destination, pg.capacity, pg.cost, pg.time, pg.load, pg.early_time, pg.late_time)
+    _pg = ESPPRC_Instance(1, pg.destination, pg.capacity, pg.cost, pg.time, pg.load, pg.early_time, pg.late_time, pg.service_time)
     p = initialize_pulse(1)
     p_star = initialize_pulse(1; cost=Inf)
 
@@ -177,7 +177,7 @@ function bounding_scheme(pg::PulseGraph, max_neg_cost_routes)
     return lower_bounds, time_values
 end
 
-function pulse_procedure!(v_i::Int, p::Pulse, best_p::Pulse, neg_cost_sols::Vector{Pulse}, lower_bounds, time_values, pg::PulseGraph, max_neg_cost_routes)
+function pulse_procedure!(v_i::Int, p::Pulse, best_p::Pulse, neg_cost_sols::Vector{Pulse}, lower_bounds, time_values, pg::ESPPRC_Instance, max_neg_cost_routes)
     # v_i = current node
     @assert v_i == p.next
 
@@ -231,7 +231,7 @@ function pulse_procedure!(v_i::Int, p::Pulse, best_p::Pulse, neg_cost_sols::Vect
             pp.next = v_j 
             pp.cost += pg.cost[v_i, v_j]
             pp.load += pg.load[v_i, v_j]
-            pp.time = max(pg.early_time[v_j], pp.time + pg.time[v_i, v_j]) 
+            pp.time = max(pg.early_time[v_j], pp.time + pg.service_time[v_i] + pg.time[v_i, v_j]) 
             pulse_procedure!(v_j, pp, best_p, neg_cost_sols, lower_bounds, time_values, pg, max_neg_cost_routes)
         end
     end
@@ -239,7 +239,7 @@ function pulse_procedure!(v_i::Int, p::Pulse, best_p::Pulse, neg_cost_sols::Vect
     # 
 end
 
-function solveESPPRCpulse(org_pg::PulseGraph; max_neg_cost_routes=Inf)
+function solveESPPRCpulse(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
     pg = deepcopy(org_pg)
     graph_reduction!(pg)
 

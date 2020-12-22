@@ -30,7 +30,7 @@ function Base.show(io::IO, p::Pulse)
     println("         load=$(p.load)")
     println("         time=$(p.time)")
 end
-mutable struct PulseGraph
+mutable struct ESPPRC_Instance
     origin      :: Int64
     destination :: Int64
     capacity    :: Float64
@@ -39,6 +39,7 @@ mutable struct PulseGraph
     load        :: Matrix{Float64}
     early_time  :: Vector{Float64}
     late_time   :: Vector{Float64}
+    service_time:: Vector{Float64}
 end
 ################################################
 

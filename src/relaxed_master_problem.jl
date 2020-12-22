@@ -64,18 +64,9 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-
         veh_cond = ("<=", n_customers)
     end
 
-    # cost_mtx only accounts the travel time, not service time
+    # cost_mtx/time_mtx only accounts the travel time, not service time
     cost_mtx = copy(vrptw.travel_time)
-
-    # add service time to the time matrix
     time_mtx = copy(vrptw.travel_time)
-    for i in set_N, j in set_N
-        if i in set_C
-            time_mtx[i, j] = time_mtx[i, j] + vrptw.service_time[i]
-        else 
-            time_mtx[i, j] = time_mtx[i, j]
-        end
-    end
 
     origin = depot0
     destination = depot_dummy
@@ -187,7 +178,7 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-
 
         # solve ESPPRC
 
-        pg = PulseGraph(
+        pg = ESPPRC_Instance(
             origin,
             destination,
             capacity,
@@ -196,6 +187,7 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-
             resrc_mtx,
             early_time,
             late_time,
+            service_time
         )
 
         best_p, all_negative_reduced_cost_paths = solveESPPRCpulse(pg, max_neg_cost_routes=400)

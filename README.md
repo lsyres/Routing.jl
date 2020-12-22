@@ -124,9 +124,9 @@ While ESPPRC is used mostly in the VRP context, it is also useful in some other 
 
 ### ESPPRC Input 
 
-You need to generate `PulseGraph`:
+You need to generate `ESPPRC_Instance`:
 ```julia
-mutable struct PulseGraph
+mutable struct ESPPRC_Instance
     origin      :: Int64
     destination :: Int64
     capacity    :: Float64
@@ -135,6 +135,7 @@ mutable struct PulseGraph
     load        :: Matrix{Float64}
     early_time  :: Vector{Float64}
     late_time   :: Vector{Float64}
+    service_time:: Vector{Float64}
 end
 ```
 
