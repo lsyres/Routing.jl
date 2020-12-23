@@ -4,7 +4,7 @@
 
 using VRPTW
 
-include("righini.jl")
+include("labeling.jl")
 
 using Test 
 
@@ -119,7 +119,7 @@ end
 @show sol.path
 @show lab1.path
 @show lab2.path
-@assert isapprox(sol.cost, lab.cost, atol=1e-7)
+@assert isapprox(sol.cost, lab1.cost, atol=1e-7)
 
 println("done")
 

@@ -4,13 +4,13 @@
 
 using VRPTW
 
-include("righini.jl")
+include("labeling.jl")
 
 using Test 
 
 # For testing purpose
 using Random
-Random.seed!(123432)
+# Random.seed!(123432)
 
 
 # We need to construct a PulseGraph instance
@@ -117,17 +117,18 @@ ei = ESPPRC_Instance(
 
 
 @time sol = solveESPPRCpulse(ei)
-@time best_label, labelset = solveESPPRCrighini(ei)
+@time lab1, labelset1 = monodirectional(ei)
+@time lab2, labelset2 = bidirectional(ei)
 
-println("done")
 
-println("Route: ", sol.path)
-println("Total Cost = ", sol.cost)
-println("Total Load = ", sol.load)
-println("Total Time = ", sol.time)
-
+@show sol.cost, sol.load, sol.time
+@show lab1.cost, lab1.load, lab1.time
+@show lab2.cost, lab2.load, lab2.time
+@show sol.path
+@show lab1.path
+@show lab2.path
 
 @testset "ESPPRC-Example" begin
-    @test isapprox(sol.cost, -1.124519917849354)
-    @test isapprox(best_label.cost, -1.124519917849354)
+    @assert isapprox(sol.cost, lab1.cost, atol=1e-7)
+    @assert isapprox(lab1.cost, lab2.cost, atol=1e-7)    
 end
