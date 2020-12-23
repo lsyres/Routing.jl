@@ -82,9 +82,7 @@ function extend(λ_i::Label, v_i::Int, v_j::Int, pg::ESPPRC_Instance)
 end
 
 
-function is_dominated_by(label::Label, other_label::Label)
-    # Check if label is dominated by other_label 
-
+function is_identical(label::Label, other_label::Label)
     is_same = label.path == other_label.path
     has_same_values = label.cost == other_label.cost &&
                         label.time == other_label.time && 
@@ -94,46 +92,55 @@ function is_dominated_by(label::Label, other_label::Label)
         # Exactly the same path
         @assert has_same_values
         return true
-    elseif has_same_values
-        # Different path, but they are equally good. So far.
-        return true
-    elseif label.cost >= other_label.cost &&
-                label.time >= other_label.time &&
-                label.load >= other_label.load &&
-                all(label.flag .>= other_label.flag)
-                # sum(label.flag) >= sum(other_label.flag) 
-
-            # Big question here. 
-            # Is sum enough to check dominance over unrechable?
-
-        return true
-    else
+    else 
         return false
     end
-    
 end
+                    
+function dominate(label::Label, other_label::Label)
+    # Check if label dominates other_label 
+
+    if label.cost > other_label.cost
+        return false
+    elseif label.time > other_label.time
+        return false
+    elseif label.load > other_label.load 
+        return false
+    elseif all(label.flag .>= other_label.flag)
+        return false
+    else
+        return true
+    end
+end
+
 
 function EFF!(Λ::Vector, F_ij::Vector, v_j::Int)
     is_updated = false
     while !isempty(F_ij)
         label = pop!(F_ij)
         
-        is_non_dominated = true 
         idx = []
         for n in eachindex(Λ[v_j])
             other_label = Λ[v_j][n]
-            if is_dominated_by(label, other_label)
-                is_non_dominated = false
-                # break
-            elseif is_dominated_by(other_label, label)
+            if dominate(label, other_label) && !is_identical(label, other_label)
                 push!(idx, n)
             end
         end
+    
         if !isempty(idx)
             deleteat!(Λ[v_j], idx)
             is_updated = true
         end
-
+    
+        is_non_dominated = true 
+        for n in eachindex(Λ[v_j])
+            other_label = Λ[v_j][n]
+            if dominate(other_label, label) || is_identical(label, other_label)
+                is_non_dominated = false
+                break
+            end
+        end
+    
         if is_non_dominated
             push!(Λ[v_j], label)
             is_updated = true
