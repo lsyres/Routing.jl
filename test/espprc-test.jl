@@ -3,17 +3,18 @@
 # Modified
 
 using VRPTW
-
-include("labeling.jl")
-
 using Test 
 
 # For testing purpose
 using Random
-Random.seed!(23423)
-using ElasticArrays
+# Random.seed!(23423) # bug instance 
+Random.seed!(1)
 
-dataset_name = "C202_050"
+# For Debugging
+include("espprc_test_functions.jl")
+
+
+
 dataset_name = "C102_100"
 
 data_file_path = dataset_name * ".xml"
@@ -85,32 +86,10 @@ ei = ESPPRC_Instance(
 
 
 
-function show_details(path, pg::ESPPRC_Instance)
-    println("--------------Path Details ----------------------")
-    println(path)
-    j = path[1]
-    arr_time = 0.0
-    load = 0.0
-    cost = 0.0
-    cost_change = 0.0
-    println("At node $j: time=$(round(arr_time)), load=$(round(load)), cost=$(round(cost)), cost_change=$cost_change")
-    for k in 2:length(path)
-        i, j = path[k-1], path[k]
-        arr_time = max(arr_time + pg.service_time[i] + pg.time[i,j], pg.early_time[j])
-        load += pg.load[i,j]
-        cost += pg.cost[i,j]
-        cost_change = pg.cost[i,j]
-        println("At node $j: time=$(round(arr_time)), load=$(round(load)), cost=$(round(cost)), cost_change=$cost_change")    
-    end      
-    println("-"^50)  
-end
-
-
-############################################################
-
-@time sol = solveESPPRCpulse(ei)
-@time lab1, labelset1 = monodirectional(ei)
-@time lab2, labelset2 = bidirectional(ei)
+@info("ESPPRC $(dataset_name) testing...")
+@time sol = solveESPPRC(ei, method="pulse")
+@time lab1 = solveESPPRC(ei, method="monodirectional")
+@time lab2 = solveESPPRC(ei, method="bidirectional")
 
 
 @show sol.cost, sol.load, sol.time
@@ -119,10 +98,36 @@ end
 @show sol.path
 @show lab1.path
 @show lab2.path
-@assert isapprox(sol.cost, lab1.cost, atol=1e-7)
+
+@testset "ESPPRC $(dataset_name) Test" begin
+    @test isapprox(sol.cost, lab1.cost, atol=1e-7)
+end
 
 println("done")
 
 show_details(sol.path, ei)
 show_details(lab1.path, ei)
 show_details(lab2.path, ei)
+
+############################################################
+max_neg = 20
+@info("ESPPRC $(dataset_name) testing with max_neg_cost_routes=$(max_neg)...")
+
+@time sol, neg_sols = solveESPPRC(ei, method="pulse", max_neg_cost_routes=max_neg)
+@time lab1, neg_labs1 = solveESPPRC(ei, method="monodirectional", max_neg_cost_routes=max_neg)
+@time lab2, neg_labs2 = solveESPPRC(ei, method="bidirectional", max_neg_cost_routes=max_neg)
+
+@testset "ESPPRC $(dataset_name) Test with max_neg_cost_routes" begin
+    @test length(neg_sols) <= max_neg 
+    @test length(neg_labs1) <= max_neg 
+    @test length(neg_labs2) <= max_neg 
+    for l in neg_sols 
+        @test l.cost < 0.0
+    end
+    for l in neg_labs1 
+        @test l.cost < 0.0
+    end
+    for l in neg_labs2 
+        @test l.cost < 0.0
+    end    
+end

@@ -1,17 +1,4 @@
 
-function graph_reduction!(pg::ESPPRC_Instance)
-    n_nodes = length(early_time)
-    OD = [pg.origin, pg.destination]
-
-    for i in 1:n_nodes, j in 1:n_nodes
-        if i != j && !in(i, OD) && !in(j, OD)
-            if pg.early_time[i] + pg.service_time[i] + pg.time[i, j] > pg.late_time[j]
-                pg.cost[i, j] = Inf
-            end
-        end
-    end
-end
-
 function predecessors(v_i, pg::ESPPRC_Instance)
     if v_i == pg.origin
         return []
@@ -50,14 +37,7 @@ function forward_reach(λ_i::Label, v_i::Int, v_j::Int, pg::ESPPRC_Instance)
     return is_reachable, arrival_time, new_load
 end
 
-function calculate_max_T(pg::ESPPRC_Instance)
-    n_nodes = length(pg.early_time)
-    set_N = 1:n_nodes
-    set_C = setdiff(set_N, [pg.origin, pg.destination])
-    tmp = [pg.late_time[i] + pg.service_time[i] + pg.time[i, pg.destination] for i in set_C]
-    max_T = maximum(tmp)
-    return max_T
-end
+
 
 function backward_reach(λ_i::Label, v_i::Int, v_k::Int, pg::ESPPRC_Instance, max_T)
     # Currently at v_i 
@@ -211,12 +191,28 @@ function EFF!(Λ::Vector, label::Label, v_j::Int)
     return is_updated
 end
 
-function find_min_cost_label!(labels)
+function prepare_return_values!(labels, max_neg_cost_routes)
     if isempty(labels)
-        return nothing
+        if max_neg_cost_routes < Inf
+            return Label(0, 0, [], Inf, []), []
+        else
+            return Label(0, 0, [], Inf, []) 
+        end
     else
         sort!(labels, by=x->x.cost)
-        return labels[1]
+        best_label = labels[1]
+        if max_neg_cost_routes < Inf
+            idx = findfirst(x -> x.cost >= 0.0, labels)
+            if isnothing(idx) || idx == 1
+                neg_cost_labels = []
+            else
+                idx = min(idx-1, max_neg_cost_routes)
+                neg_cost_labels = labels[1:idx]
+            end
+            return best_label, neg_cost_labels
+        else
+            return best_label
+        end
     end
 end
 
@@ -239,8 +235,6 @@ function join_labels!(final_labels, λ_i::Label, λ_j::Label, pg::ESPPRC_Instanc
     if time_check > max_T
         return Inf
     end
-
-    # println("Joining: ", λ_i.path, " + ", λ_j.path)
 
     new_path = [λ_i.path; λ_j.path]
     new_cost = λ_i.cost + pg.cost[v_i, v_j] + λ_j.cost 
@@ -362,7 +356,7 @@ function monodirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
 
     # Label at the origin
     unreachable = zeros(Int, n_nodes)
-    init_label = Label(0.0, 0.0, unreachable, 0.0, [pg.origin])
+    init_label = Label(pg.early_time[pg.origin], 0.0, unreachable, 0.0, [pg.origin])
     update_flag!(init_label, pg)
     push!(Λ_fw[pg.origin], init_label)
 
@@ -380,10 +374,9 @@ function monodirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
     end
 
     final_labels = Λ_fw[pg.destination]
-    @show size(final_labels)
-
-    best_label = find_min_cost_label!(final_labels)
-    return best_label, final_labels
+    # @show size(final_labels)
+    
+    return prepare_return_values!(final_labels, max_neg_cost_routes)
 
 end
 
@@ -396,6 +389,7 @@ function bidirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
     n_nodes = length(pg.early_time)
     set_N = 1:n_nodes
     max_T = calculate_max_T(pg)
+    @show max_T, pg.late_time[pg.destination]
 
     # Initial Label Sets
     Λ_fw = Vector{Vector{Label}}(undef, n_nodes)
@@ -407,7 +401,7 @@ function bidirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
 
     # Label at the origin
     unreachable = zeros(Int, n_nodes)
-    init_label = Label(0.0, 0.0, unreachable, 0.0, [pg.origin])
+    init_label = Label(pg.early_time[pg.origin], 0.0, unreachable, 0.0, [pg.origin])
     update_flag!(init_label, pg)
     push!(Λ_fw[pg.origin], init_label)
 
@@ -435,9 +429,7 @@ function bidirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
 
     final_labels, count_fw_labels, count_bw_labels = join_label_sets(Λ_fw, Λ_bw, max_T, pg)
 
-    @show count_fw_labels, count_bw_labels, size(final_labels)
-
-    best_label = find_min_cost_label!(final_labels)
-    return best_label, final_labels
+    # @show count_fw_labels, count_bw_labels, size(final_labels)
+    return prepare_return_values!(final_labels, max_neg_cost_routes)
 
 end

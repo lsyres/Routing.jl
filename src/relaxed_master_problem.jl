@@ -190,7 +190,7 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-
             service_time
         )
 
-        best_p, all_negative_reduced_cost_paths = solveESPPRCpulse(pg, max_neg_cost_routes=400)
+        best_p, all_negative_reduced_cost_paths = solveESPPRC(pg, max_neg_cost_routes=400, method="pulse")
 
         # println("-- # negative reduced cost paths: $(length(all_negative_reduced_cost_paths))")
         added_path_counter = 0

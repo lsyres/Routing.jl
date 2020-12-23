@@ -1,13 +1,12 @@
 # Solving ESPPRC 
-# The example given by Google OR-Tools https://developers.google.com/optimization/routing/vrp
-# Modified
+# Modified from the example given by Google OR-Tools https://developers.google.com/optimization/routing/vrp
 
-using VRPTW 
+using VRPTW
 using Test 
-
-# For testing purpose
 using Random
-Random.seed!(123432)
+
+# For Debugging
+include("espprc_test_functions.jl")
 
 
 # We need to construct a ESPPRC_Instance instance
@@ -34,11 +33,13 @@ n_nodes = 17
 # The objective of ESPPRC is to minimize the total cost 
 # Randomly generated in this example 
 # cost allows negative values
-cost = rand(17, 17) .- 0.5
+cost = - rand(17, 17) 
 
 # travel_time matrix:
 # Some elements are Inf, meaning disconnected
 # travel_time is used to check the time windows constraints
+# If you have service time in each node, then it should be added to travel_time
+# e.g., travel_time[i,j] = travel_time[i,j] + service_time[i]
 travel_time = Float64[
     0 8 3 2 6 8 4 8 8 13 7 5 8 12 10 Inf 6; 
     8 0 11 10 6 3 9 5 8 4 15 14 13 9 18 9 9; 
@@ -72,8 +73,8 @@ end
 # Time windows, for all nodes
 time_windows = [
     (0, 12),  # 1
-    (10, 15),  # 2
-    (16, 18),  # 3
+    (0, 15),  # 2
+    (16, 28),  # 3
     (10, 13),  # 4
     (0, 5),  # 5
     (5, 10),  # 6
@@ -89,19 +90,20 @@ time_windows = [
     (11, 15),  # 16
     (0, 35), # 17
 ]
+# If early_time is set for the origin, it means the earliest possible departure time.
 early_time = [time_windows[i][1] for i in 1:n_nodes]
 late_time = [time_windows[i][2] for i in 1:n_nodes]
-service_time = zeros(length(late_time))
 
 # vehicle capacity
 capacity = 15 
 
 # origin and destination
-origin, destination = 1, 17
+origin, destination = 6, 3
 
+# service_time is just set to all zeros in this example
+service_time = zeros(n_nodes)
 
-# create a PulseGraph instance
-pg = ESPPRC_Instance(
+ei = ESPPRC_Instance(
     origin,
     destination,
     capacity,
@@ -113,16 +115,23 @@ pg = ESPPRC_Instance(
     service_time
 )
 
-# solve the ESPPRC 
-# typeof(sol) == Pulse
-@time sol = solveESPPRCpulse(pg)
 
-println("Route: ", sol.path)
-println("Total Cost = ", sol.cost)
-println("Total Load = ", sol.load)
-println("Total Time = ", sol.time)
+@info("Testing for OD=($(ei.origin), $(ei.destination))")
 
+# Three different algorithms for ESPPRC 
+@time sol = solveESPPRC(ei, method="pulse")
+@time lab1 = solveESPPRC(ei, method="monodirectional")
+@time lab2 = solveESPPRC(ei, method="bidirectional")
 
-@testset "ESPPRC-Example" begin
-    @test sol.cost == -1.124519917849354
+@show sol.cost, sol.load, sol.time, sol.path
+@show lab1.cost, lab1.load, lab1.time, lab1.path
+@show lab2.cost, lab2.load, lab2.time, lab2.path
+    
+show_details(sol.path, ei)
+show_details(lab1.path, ei)
+show_details(lab2.path, ei)
+
+@testset "ESPPRC-Labeling-Simple" begin
+    @test sol.path == lab1.path 
+    @test lab1.path == lab2.path 
 end

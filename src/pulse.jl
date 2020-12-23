@@ -92,20 +92,11 @@ function should_rollback(p::Pulse, pg::ESPPRC_Instance)
     end
 end
 
-function graph_reduction!(pg::ESPPRC_Instance)
-    for i in 1:pg.origin-1, j in 1:pg.origin-1
-        if i != j 
-            if pg.early_time[i] + pg.service_time[i] + pg.time[i, j] > pg.late_time[j]
-                pg.cost[i, j] = Inf
-            end
-        end
-    end
-end
-
 function time_to_time_value_index(t, time_values)
     Δ = time_values[1] - time_values[2] 
     time_ub = time_values[1]
     k = Int(ceil((time_ub - t) / Δ)) + 1
+    k = max(k, 1)
     return k
 end
 
@@ -132,9 +123,11 @@ end
 
     
 function bounding_scheme(pg::ESPPRC_Instance, max_neg_cost_routes)
-    time_ub = pg.late_time[pg.destination]
+    # time_ub = pg.late_time[pg.destination]
+    time_ub = calculate_max_T(pg)
     time_lb = 0.1 * time_ub
     Δ = Int(floor((time_ub-time_lb) / 15))
+    Δ = max(Δ, 1)
     # Δ = 10
     # @show time_ub, time_lb, Δ
 
@@ -239,6 +232,10 @@ function pulse_procedure!(v_i::Int, p::Pulse, best_p::Pulse, neg_cost_sols::Vect
     # 
 end
 
+function convert(p::Pulse)
+    label = Label(p.time, p.load, [], p.cost, p.path)
+end
+
 function solveESPPRCpulse(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
     pg = deepcopy(org_pg)
     graph_reduction!(pg)
@@ -252,8 +249,8 @@ function solveESPPRCpulse(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
     pulse_procedure!(pg.origin, p, best_p, neg_cost_sols, lower_bounds, time_values, pg, max_neg_cost_routes)
 
     if max_neg_cost_routes < Inf
-        return best_p, neg_cost_sols
+        return convert(best_p), convert.(neg_cost_sols)
     else
-        return best_p
+        return convert(best_p)
     end
 end
