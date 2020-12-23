@@ -143,9 +143,16 @@ See this example for details: [`test/espprc-example.jl`](https://github.com/chkw
 
 ### ESPPRC Algorithm
 
-This package implements the Pulse algorithm proposed in the following paper:
+This package implements the following algorithms:
 
-- [Leonardo Lozano, Daniel Duque, Andrés L. Medaglia (2016) An Exact Algorithm for the Elementary Shortest Path Problem with Resource Constraints. Transportation Science 50(1):348-357.](https://doi.org/10.1287/trsc.2014.0582)
+- The Pulse algorithm: [Leonardo Lozano, Daniel Duque, Andrés L. Medaglia (2016) An Exact Algorithm for the Elementary Shortest Path Problem with Resource Constraints. Transportation Science 50(1):348-357.](https://doi.org/10.1287/trsc.2014.0582)
 
-If you need a faster c++ implementation for this algorithm, I recommend https://github.com/DouYishun/vrp-espprc.
+  - Callable by `solveESPPRC(problem::ESPPRC_Instance, method="pulse")`
+  - If you need a faster c++ implementation for this algorithm, I recommend https://github.com/DouYishun/vrp-espprc.
+
+- A monodirectional dynamic programming method: [Feillet, D., Dejax, P., Gendreau, M., Gueguen, C., 2004. An exact algorithm for the elementary shortest path problem with resource constraints: Application to some vehicle routing problems. Networks 44, 216–229](https://doi.org/10.1002/net.20033)
+  - Callable by `solveESPPRC(problem::ESPPRC_Instance, method="monodirectional")`
+
+- A bidirectional dynamic programming method: [Righini, G., Salani, M., 2006. Symmetry helps: Bounded bi-directional dynamic programming for the elementary shortest path problem with resource constraints. Discrete Optimization 3, 255–273.](https://doi.org/10.1016/j.disopt.2006.05.007)
+  - Callable by `solveESPPRC(problem::ESPPRC_Instance, method="bidirectional")`
 
