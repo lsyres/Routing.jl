@@ -10,10 +10,10 @@ using Test
 
 # For testing purpose
 using Random
-Random.seed!(123432)
+# Random.seed!(123432)
 using ElasticArrays
 
-dataset_name = "C202_050"
+# dataset_name = "C202_050"
 dataset_name = "C101_050"
 
 data_file_path = dataset_name * ".xml"
@@ -53,7 +53,7 @@ capacity = fleet.capacity
 
 alpha = rand(0:20, n_nodes) * 2
 cost_mtx = t - repeat(alpha, 1, n_nodes)
-cost_mtx = t .* (rand(size(t)...) .- 0.20)
+cost_mtx = t .* (rand(size(t)...) .- 0.10)
 
 
 resrc_mtx = zeros(n_nodes, n_nodes)

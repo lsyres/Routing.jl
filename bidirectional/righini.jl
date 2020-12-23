@@ -205,17 +205,17 @@ function join_labels!(final_labels, λ_i::Label, λ_j::Label, pg::ESPPRC_Instanc
     # Check no cycle
     new_flag = λ_i.flag .+ λ_j.flag
     if !prod(λ_i.flag .+ λ_j.flag .<= 1)
-        return 
+        return Inf
     end
     # Check capacity
     new_load = λ_i.load + pg.load[v_i, v_j] + λ_j.load 
     if new_load > pg.capacity
-        return
+        return Inf
     end
     # Check time
     time_check = λ_i.time + pg.service_time[v_i] + pg.time[v_i, v_j] + pg.service_time[v_j] + λ_j.time
     if time_check > max_T
-        return
+        return Inf
     end
 
     # println("Joining: ", λ_i.path, " + ", λ_j.path)
@@ -223,10 +223,12 @@ function join_labels!(final_labels, λ_i::Label, λ_j::Label, pg::ESPPRC_Instanc
     new_path = [λ_i.path; λ_j.path]
     new_cost = λ_i.cost + pg.cost[v_i, v_j] + λ_j.cost 
     new_time = calculate_path_time(new_path, pg)
-
+    
     new_label = Label(new_time, new_load, new_flag, new_cost, new_path)
     update_flag!(new_label, pg)
     push!(final_labels, new_label)
+
+    return new_cost
 end
 
 function select_node!(set_E, pg::ESPPRC_Instance)
@@ -316,15 +318,43 @@ function solveESPPRCrighini(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
         setdiff!(set_E, v_i)
     end
 
+    println("...search is done...")
+
 
     t0 = time()
+
+    # Finding the minimum cost among labels
+    min_all_bw = Inf 
+    min_bw = fill(Inf, n_nodes)
+    min_fw = fill(Inf, n_nodes)
+    for v_i in set_N
+        for λ_i in Λ_fw[v_i]
+            min_fw[v_i] = min(min_fw[v_i], λ_i.cost)
+        end
+        for λ_i in Λ_bw[v_i]
+            min_bw[v_i] = min(min_bw[v_i], λ_i.cost)
+            min_all_bw = min(min_all_bw, λ_i.cost)
+        end
+    end
+    UB = Inf
+
     final_labels = Label[]
     # Join between forward and backward paths
     for v_i in set_N
-        for λ_i in Λ_fw[v_i]
-            for v_j in set_N
-                for λ_j in Λ_bw[v_j]
-                    join_labels!(final_labels, λ_i, λ_j, pg, max_T)
+        min_c = minimum([pg.cost[v_i,j] for j in set_N if j!=v_i])
+        if min_fw[v_i] + min_c + min_all_bw < UB
+            for λ_i in Λ_fw[v_i]
+                if λ_i.cost + min_c + min_all_bw < UB 
+                    for v_j in set_N
+                        if λ_i.cost + pg.cost[v_i,v_j] + min_bw[v_j] < UB 
+                            for λ_j in Λ_bw[v_j]
+                                if λ_i.cost + pg.cost[v_i,v_j] + λ_j.cost < UB 
+                                    new_cost = join_labels!(final_labels,λ_i, λ_j, pg, max_T)
+                                    UB = min(UB, new_cost)
+                                end
+                            end
+                        end
+                    end
                 end
             end
         end
