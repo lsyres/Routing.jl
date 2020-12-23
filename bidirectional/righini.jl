@@ -133,52 +133,65 @@ function backward_extend(λ_i::Label, v_i::Int, v_k::Int, pg::ESPPRC_Instance, m
     return label
 end
 
-function is_dominated_by(label::Label, other_label::Label)
-    # Check if label is dominated by other_label 
 
+function show_label(label::Label)
+    println("time=$(label.time), load=$(label.load), cost=$(label.cost), path=$(label.path)")
+end
+
+function is_identical(label::Label, other_label::Label)
     is_same = label.path == other_label.path
     has_same_values = label.cost == other_label.cost &&
                         label.time == other_label.time && 
                         label.load == other_label.load
 
-    # return true: label is dominated by other_label; label is removed
-    # return false: label is not dominated by other_label; label is alive
     if is_same
         # Exactly the same path
         @assert has_same_values
         return true
-    elseif has_same_values
-        # Different path, but they are equally good. So far.
-        return true
-    elseif label.cost < other_label.cost
+    else 
         return false
-    elseif label.time < other_label.time
+    end
+end
+                    
+function dominate(label::Label, other_label::Label)
+    # Check if label dominates other_label 
+
+    if label.cost > other_label.cost
         return false
-    elseif label.load < other_label.load 
+    elseif label.time > other_label.time
         return false
-    elseif any(label.flag .< other_label.flag)
+    elseif label.load > other_label.load 
+        return false
+    elseif all(label.flag .>= other_label.flag)
         return false
     else
         return true
     end
 end
 
+
 function EFF!(Λ::Vector, label::Label, v_j::Int)
     is_updated = false
-    is_non_dominated = true 
     idx = []
     for n in eachindex(Λ[v_j])
         other_label = Λ[v_j][n]
-        if is_dominated_by(label, other_label)
-            is_non_dominated = false
-            # break
-        elseif is_dominated_by(other_label, label)
+        if dominate(label, other_label) && !is_identical(label, other_label)
             push!(idx, n)
         end
     end
+
     if !isempty(idx)
         deleteat!(Λ[v_j], idx)
         is_updated = true
+    end
+
+    is_non_dominated = true 
+    for n in eachindex(Λ[v_j])
+        other_label = Λ[v_j][n]
+        if dominate(other_label, label) || is_identical(label, other_label)
+            is_non_dominated = false
+            break
+        end
     end
 
     if is_non_dominated
@@ -243,7 +256,6 @@ function solveESPPRCrighini(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
     n_nodes = length(pg.early_time)
     set_N = 1:n_nodes
     max_T = calculate_max_T(pg)
-    @show pg.late_time[pg.destination], max_T
 
     # Initial Label Sets
     Λ_fw = Vector{Vector{Label}}(undef, n_nodes)
@@ -277,12 +289,11 @@ function solveESPPRCrighini(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
         # v_i = set_E[1]
         v_i = select_node!(set_E, pg)
 
-        t0 = time()
         # Forward Extension            
         for λ_i in Λ_fw[v_i]
             if λ_i.time < max_T / 2
                 for v_j in successors(v_i, pg)
-                    if λ_i.flag[v_j] == 0
+                    if λ_i.flag[v_j] == 0 && !in(v_j, λ_i.path)
                         label = forward_extend(λ_i, v_i, v_j, pg)
                         if !isnothing(label)
                             is_updated = EFF!(Λ_fw, label, v_j)
@@ -294,14 +305,12 @@ function solveESPPRCrighini(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
                 end
             end
         end
-        forward_cpu_time += time() - t0
 
-        t0 = time()
         # Backward Extension
         for λ_i in Λ_bw[v_i]
             if λ_i.time < max_T / 2
                 for v_k in predecessors(v_i, pg)
-                    if λ_i.flag[v_k] == 0
+                    if λ_i.flag[v_k] == 0 && !in(v_k, λ_i.path)
                         label = backward_extend(λ_i, v_i, v_k, pg, max_T)
                         if !isnothing(label)
                             is_updated = EFF!(Λ_bw, label, v_k)
@@ -313,15 +322,9 @@ function solveESPPRCrighini(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
                 end
             end
         end
-        backward_cpu_time += time() - t0
 
         setdiff!(set_E, v_i)
     end
-
-    println("...search is done...")
-
-
-    t0 = time()
 
     # Finding the minimum cost among labels
     min_all_bw = Inf 
@@ -363,9 +366,7 @@ function solveESPPRCrighini(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
             end
         end
     end
-    join_cpu_time = time() - t0
 
-    @show forward_cpu_time, backward_cpu_time, join_cpu_time
     @show n_fw_labels, n_bw_labels, size(final_labels)
 
     best_label = find_min_cost_label!(final_labels)
