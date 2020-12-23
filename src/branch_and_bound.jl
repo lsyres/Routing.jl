@@ -122,7 +122,7 @@ function  branch_decision!(next_branches, best_sol, sol_y, sol_routes, sol_obj, 
     end
 end
 
-function solve_BnB!(best_sol::BestIncumbent, branches)
+function solve_BnB!(best_sol::BestIncumbent, branches; pricing_method="monodirectional")
     next_branches = Branch[]
 
     while !isempty(branches)
@@ -150,7 +150,7 @@ function solve_BnB!(best_sol::BestIncumbent, branches)
                 sol_y, sol_routes, sol_obj = [], [], Inf
             else
 
-                sol_y, sol_routes, sol_obj = solve_cg_rmp(new_vrptw, initial_routes=new_routes, veh_cond=veh_cond, tw_reduce=false)
+                sol_y, sol_routes, sol_obj = solve_cg_rmp(new_vrptw, initial_routes=new_routes, veh_cond=veh_cond, tw_reduce=false, pricing_method=pricing_method)
 
                 new_branch = Branch(new_history, new_vrptw, current_branch.root_routes, new_branch_priority, sol_obj, veh_cond)
 
@@ -187,7 +187,7 @@ function generate_branch_priority(root_y, root_routes, vrptw)
     return sort(collect(branch_score_dict), by= x->x[2])
 end
 
-function initial_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
+function initial_BnB!(best_sol, vrptw, root_y, root_routes, root_obj; pricing_method="monodirectional")
     branch_priority = generate_branch_priority(root_y, root_routes, vrptw)
     new_vrptw = deepcopy(vrptw)
     history = OrderedDict()
@@ -214,7 +214,7 @@ function initial_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
         n_vehicles = floor(sum(root_y)) |> Int 
         vehicle_conditions = [("<=", n_vehicles), (">=", n_vehicles+1)]                
         for veh_cond in vehicle_conditions
-            sol_y, sol_routes, sol_obj = solve_cg_rmp(new_vrptw, initial_routes=new_routes, veh_cond=veh_cond, tw_reduce=false)
+            sol_y, sol_routes, sol_obj = solve_cg_rmp(new_vrptw, initial_routes=new_routes, veh_cond=veh_cond, tw_reduce=false, pricing_method=pricing_method)
 
             new_branch = Branch(history, new_vrptw, root_routes, branch_priority, sol_obj, veh_cond)
 
@@ -227,7 +227,7 @@ function initial_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
     
 end
 
-function complete_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
+function complete_BnB!(best_sol, vrptw, root_y, root_routes, root_obj; pricing_method="monodirectional")
     # Most Priority is at the end.
     branch_priority = generate_branch_priority(root_y, root_routes, vrptw)
 
@@ -241,7 +241,7 @@ function complete_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
         n_vehicles = floor(sum(root_y)) |> Int 
         vehicle_conditions = [("<=", n_vehicles), (">=", n_vehicles+1)]
         for veh_cond in vehicle_conditions
-            sol_y, sol_routes, sol_obj = solve_cg_rmp(vrptw, initial_routes=root_routes, veh_cond=veh_cond, tw_reduce=false)
+            sol_y, sol_routes, sol_obj = solve_cg_rmp(vrptw, initial_routes=root_routes, veh_cond=veh_cond, tw_reduce=false, pricing_method=pricing_method)
 
             history = OrderedDict()
             new_branch = Branch(history, vrptw, root_routes, branch_priority, sol_obj, veh_cond)
@@ -255,7 +255,8 @@ function complete_BnB!(best_sol, vrptw, root_y, root_routes, root_obj)
 
 end
 
-function solve_vrp_bnb(vrptw::VRPTW_Instance; tw_reduce=true)
+function solve_vrp_bnb(vrptw::VRPTW_Instance; tw_reduce=true, pricing_method="monodirectional")
+    println("Pricing method = $pricing_method")
 
     start_time = time()
 
@@ -270,7 +271,7 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance; tw_reduce=true)
 
     # solve root node 
     @info("Solving the root LP relaxation with column generation...")
-    root_y, root_routes, root_obj = solve_cg_rmp(vrptw, initial_routes=[], tw_reduce=false)
+    root_y, root_routes, root_obj = solve_cg_rmp(vrptw, initial_routes=[], tw_reduce=false, pricing_method=pricing_method)
     println("Root node solved. Cumulative Time: ", time() - start_time)
     @show length(root_routes)
 

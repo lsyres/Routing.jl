@@ -64,18 +64,25 @@ function backward_reach(λ_i::Label, v_i::Int, v_k::Int, pg::ESPPRC_Instance, ma
     return is_reachable, min_time_required, new_load
 end
 
-function update_flag!(label::Label, pg::ESPPRC_Instance)
+function update_flag!(label::Label, pg::ESPPRC_Instance; direction="backward")
     label.flag .= 0
     label.flag[label.path] .= 1
-    # v_j = label.path[end]
-    # for v_k in successors(v_j, pg)
-    #     if label.flag[v_k] == 0
-    #         is_reachable, _, _ = reach(label, v_j, v_k, pg)
-    #         if !is_reachable
-    #             label.flag[v_k] = 1
-    #         end
-    #     end
-    # end
+    
+    if direction=="forward"
+        # v_j = label.path[end]
+        # for v_k in successors(v_j, pg)
+        #     if label.flag[v_k] == 0
+        #         is_reachable, _, _ = forward_reach(label, v_j, v_k, pg)
+        #         if !is_reachable
+        #             label.flag[v_k] = 1
+        #         end
+        #     end
+        # end
+    elseif direction=="backward"
+    
+    elseif direction=="join"
+    
+    end
 end
 
 function forward_extend(λ_i::Label, v_i::Int, v_j::Int, pg::ESPPRC_Instance)
@@ -89,7 +96,7 @@ function forward_extend(λ_i::Label, v_i::Int, v_j::Int, pg::ESPPRC_Instance)
     new_path = [λ_i.path; v_j]
 
     label = Label(new_time, new_load, copy(λ_i.flag), new_cost, new_path)
-    update_flag!(label, pg)
+    update_flag!(label, pg, direction="forward")
 
     return label
 end
@@ -108,7 +115,7 @@ function backward_extend(λ_i::Label, v_i::Int, v_k::Int, pg::ESPPRC_Instance, m
     new_path = [v_k; λ_i.path]
 
     label = Label(new_time, new_load, copy(λ_i.flag), new_cost, new_path)
-    update_flag!(label, pg)
+    update_flag!(label, pg, direction="backward")
 
     return label
 end
@@ -203,8 +210,10 @@ function prepare_return_values!(labels, max_neg_cost_routes)
         best_label = labels[1]
         if max_neg_cost_routes < Inf
             idx = findfirst(x -> x.cost >= 0.0, labels)
-            if isnothing(idx) || idx == 1
+            if  idx == 1
                 neg_cost_labels = []
+            elseif isnothing(idx)
+                neg_cost_labels = labels
             else
                 idx = min(idx-1, max_neg_cost_routes)
                 neg_cost_labels = labels[1:idx]
@@ -241,7 +250,7 @@ function join_labels!(final_labels, λ_i::Label, λ_j::Label, pg::ESPPRC_Instanc
     new_time = calculate_path_time(new_path, pg)
     
     new_label = Label(new_time, new_load, new_flag, new_cost, new_path)
-    update_flag!(new_label, pg)
+    update_flag!(new_label, pg, direction="join")
     push!(final_labels, new_label)
 
     return new_cost
@@ -252,7 +261,7 @@ function select_node!(set_E, pg::ESPPRC_Instance)
 end
 
 
-function forward_search!(v_i::Int, Λ_fw::Array, set_E::Array, pg::ESPPRC_Instance; max_time=Inf)
+function forward_search!(v_i::Int, Λ_fw::Array, set_E::Array, neg_cost_labels::Vector{Label}, pg::ESPPRC_Instance; max_time=Inf)
     # Forward Extension            
     for λ_i in Λ_fw[v_i]
         if λ_i.time <= max_time
@@ -264,6 +273,9 @@ function forward_search!(v_i::Int, Λ_fw::Array, set_E::Array, pg::ESPPRC_Instan
                         if is_updated
                             push!(set_E, v_j)
                         end    
+                        if v_j == pg.destination && label.cost < 0.0
+                            push!(neg_cost_labels, label)
+                        end                                                
                     end
                 end
             end
@@ -348,6 +360,8 @@ function monodirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
     n_nodes = length(pg.early_time)
     set_N = 1:n_nodes
 
+    neg_cost_labels = Label[]
+
     # Initial Label Set
     Λ_fw = Vector{Vector{Label}}(undef, n_nodes)
     for v_i in set_N
@@ -357,7 +371,7 @@ function monodirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
     # Label at the origin
     unreachable = zeros(Int, n_nodes)
     init_label = Label(pg.early_time[pg.origin], 0.0, unreachable, 0.0, [pg.origin])
-    update_flag!(init_label, pg)
+    update_flag!(init_label, pg, direction="forward")
     push!(Λ_fw[pg.origin], init_label)
 
     # Inititial search nodes
@@ -369,7 +383,11 @@ function monodirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
     while !isempty(set_E)
         # v_i = set_E[1]
         v_i = select_node!(set_E, pg)
-        forward_search!(v_i, Λ_fw, set_E, pg)
+        forward_search!(v_i, Λ_fw, set_E, neg_cost_labels, pg)
+
+        if length(neg_cost_labels) >= max_neg_cost_routes
+            break
+        end
         setdiff!(set_E, v_i)
     end
 
@@ -389,7 +407,6 @@ function bidirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
     n_nodes = length(pg.early_time)
     set_N = 1:n_nodes
     max_T = calculate_max_T(pg)
-    @show max_T, pg.late_time[pg.destination]
 
     # Initial Label Sets
     Λ_fw = Vector{Vector{Label}}(undef, n_nodes)
@@ -402,13 +419,13 @@ function bidirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
     # Label at the origin
     unreachable = zeros(Int, n_nodes)
     init_label = Label(pg.early_time[pg.origin], 0.0, unreachable, 0.0, [pg.origin])
-    update_flag!(init_label, pg)
+    update_flag!(init_label, pg, direction="forward")
     push!(Λ_fw[pg.origin], init_label)
 
     # Label at the destination
     unreachable = zeros(Int, n_nodes)
     term_label = Label(0.0, 0.0, unreachable, 0.0, [pg.destination])
-    update_flag!(term_label, pg)
+    update_flag!(term_label, pg, direction="backward")
     push!(Λ_bw[pg.destination], term_label)
 
     # Inititial search nodes
@@ -422,9 +439,10 @@ function bidirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
     while !isempty(set_E)
         # v_i = set_E[1]
         v_i = select_node!(set_E, pg)
-        forward_search!(v_i, Λ_fw, set_E, pg; max_time=max_T/2)
+        forward_search!(v_i, Λ_fw, set_E, Label[], pg; max_time=max_T/2)
         backward_search!(v_i, Λ_bw, set_E, pg, max_T; max_time=max_T/2)
         setdiff!(set_E, v_i)
+        @show set_E
     end
 
     final_labels, count_fw_labels, count_bw_labels = join_label_sets(Λ_fw, Λ_bw, max_T, pg)

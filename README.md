@@ -97,23 +97,22 @@ as described in [this paper](https://doi.org/10.1287/trsc.33.1.101)
 
 ### VRPTW Algorithm 
 
-Currently, this package implements a [Branch-and-Price](https://doi.org/10.1287/opre.40.2.342) algorithm. The subproblem is solved as an *elementary* shortest path problem with resource constraints (ESPPRC). See [this book chapter](https://epubs.siam.org/doi/10.1137/1.9781611973594.ch5) for general description. I plan to add valid inequalities. LP relaxation in each branch is solved by [GLPK.jl](https://github.com/jump-dev/GLPK.jl) via [JuMP.jl](https://github.com/jump-dev/JuMP.jl). At this moment, it assumes unlimited number of vehicles. Valid inequalities are planned, to make it eventually a [Branch-and-Cut-and-Price](https://doi.org/10.1287/trsc.33.1.101) algorithm.
+Currently, this package implements a Branch-and-Price algorithm. The subproblem is solved as an *elementary* shortest path problem with resource constraints (ESPPRC). See [this book chapter](https://epubs.siam.org/doi/10.1137/1.9781611973594.ch5) for general description. LP relaxation in each branch is solved by [GLPK.jl](https://github.com/jump-dev/GLPK.jl) via [JuMP.jl](https://github.com/jump-dev/JuMP.jl). 
 
 - Branch-and-Price: [Desrochers, M., Desrosiers, J. and Solomon, M., 1992. A new optimization algorithm for the vehicle routing problem with time windows. Operations research, 40(2), pp.342-354.](https://doi.org/10.1287/opre.40.2.342)
 
-- Branch-and-Cut-and-Price: [Kohl, N., Desrosiers, J., Madsen, O.B., Solomon, M.M. and Soumis, F., 1999. 2-path cuts for the vehicle routing problem with time windows. Transportation Science, 33(1), pp.101-116.](https://doi.org/10.1287/trsc.33.1.101)
 #### Features
 * Branch
-  - [x] number of vehicles
-  - [x] each arc flow
+  - [x] branching on number of vehicles
+  - [x] branching on each arc flow
 
 * Cut
-  - [ ] 2-path inequalities
+  - [ ] valid inequalities ... 
 
 * Price
   - [x] ESPPRC by Pulse Algorithm
-  - [ ] ESPPRC by another algorithm
-  - [x] First 400 columns with negative reduced costs were added.
+  - [x] ESPPRC by labeling (monodirectional, bidirectional) algorithm
+  - [x] First 400 columns with negative reduced costs were added. 
   - [ ] Approximate methods? 
 
 ## Elementary Shortest Path Problem with Resource Constraints (ESPPRC)
@@ -145,13 +144,14 @@ See this example for details: [`test/espprc-example.jl`](https://github.com/chkw
 
 This package implements the following algorithms:
 
-- The Pulse algorithm: [Leonardo Lozano, Daniel Duque, Andrés L. Medaglia (2016) An Exact Algorithm for the Elementary Shortest Path Problem with Resource Constraints. Transportation Science 50(1):348-357.](https://doi.org/10.1287/trsc.2014.0582)
+- The Pulse algorithm, as introduced in: [Leonardo Lozano, Daniel Duque, Andrés L. Medaglia (2016) An Exact Algorithm for the Elementary Shortest Path Problem with Resource Constraints. Transportation Science 50(1):348-357.](https://doi.org/10.1287/trsc.2014.0582)
 
   - Callable by `solveESPPRC(problem::ESPPRC_Instance, method="pulse")`
   - If you need a faster c++ implementation for this algorithm, I recommend https://github.com/DouYishun/vrp-espprc.
 
-- A monodirectional dynamic programming method: [Feillet, D., Dejax, P., Gendreau, M., Gueguen, C., 2004. An exact algorithm for the elementary shortest path problem with resource constraints: Application to some vehicle routing problems. Networks 44, 216–229](https://doi.org/10.1002/net.20033)
+- A monodirectional dynamic programming method, as described in: [Feillet, D., Dejax, P., Gendreau, M., Gueguen, C., 2004. An exact algorithm for the elementary shortest path problem with resource constraints: Application to some vehicle routing problems. Networks 44, 216–229](https://doi.org/10.1002/net.20033)
   - Callable by `solveESPPRC(problem::ESPPRC_Instance, method="monodirectional")`
+  - Currently, the reachability concept is not implemented.
 
 - A bidirectional dynamic programming method: [Righini, G., Salani, M., 2006. Symmetry helps: Bounded bi-directional dynamic programming for the elementary shortest path problem with resource constraints. Discrete Optimization 3, 255–273.](https://doi.org/10.1016/j.disopt.2006.05.007)
   - Callable by `solveESPPRC(problem::ESPPRC_Instance, method="bidirectional")`

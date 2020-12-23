@@ -49,7 +49,7 @@ end
 
 
 
-function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-1), tw_reduce=true)
+function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-1), tw_reduce=true, pricing_method="monodirectional")
     if tw_reduce 
         time_window_reduction!(vrptw)
     end
@@ -190,9 +190,19 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-
             service_time
         )
 
-        best_p, all_negative_reduced_cost_paths = solveESPPRC(pg, max_neg_cost_routes=400, method="pulse")
+        t1 = time()
+        best_p, all_negative_reduced_cost_paths = solveESPPRC(pg, max_neg_cost_routes=400, method=pricing_method)
+        t2 = time()
 
-        # println("-- # negative reduced cost paths: $(length(all_negative_reduced_cost_paths))")
+
+        if iter == 1 || iter % 10 == 0 || abs(best_p.cost) < 1e-6
+            pricing_time = string(round((t2-t1)*1000)/1000) * " s" 
+            best_reduced_cost = round((best_p.cost)*1000)/1000
+            n_neg_cost_paths = length(all_negative_reduced_cost_paths)
+            @show iter, best_reduced_cost, n_neg_cost_paths, pricing_time
+        end
+
+
         added_path_counter = 0
 
         if best_p.path == [] || best_p.cost == Inf
