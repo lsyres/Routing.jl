@@ -1,6 +1,5 @@
-using VRPTW
-
-# include("../src/VRPTWdebug.jl")
+# using VRPTW
+include("../src/VRPTWinclude.jl")
 
 # To plot
 using PyPlot
@@ -37,13 +36,13 @@ end
 
 # solomon_vrptw = generate_solomon_vrptw_instance("RC102_025")
 
-solomon_dataset_name = "R102_025"
+solomon_dataset_name = "C103_050"
 
 solomon = load_solomon(solomon_dataset_name)
 vrptw = generate_solomon_vrptw_instance(solomon)
 
 start_time = time()
-@time routes, obj_val = solve_vrp_bnb(vrptw);
+@time routes, obj_val = solve_vrp_bnb(vrptw, pricing_method="monodirectional");
 end_time = time()
 duration = end_time - start_time
 
