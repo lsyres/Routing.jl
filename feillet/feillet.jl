@@ -10,26 +10,7 @@
 #     late_time   :: Vector{Float64}
 # end
 
-mutable struct ESPPRC_Instance
-    origin      :: Int64
-    destination :: Int64
-    capacity    :: Float64
-    cost        :: Matrix{Float64}
-    time        :: Matrix{Float64}
-    load        :: Matrix{Float64}
-    early_time  :: Vector{Float64}
-    late_time   :: Vector{Float64}
-    service_time  :: Vector{Float64}
-end
 
-
-mutable struct Label
-    time        ::Float64
-    load        ::Float64
-    unreachable ::Vector{Int}
-    cost        ::Float64
-    path        ::Vector{Int}
-end
 
 function graph_reduction!(pg::ESPPRC_Instance)
     n_nodes = length(early_time)
@@ -71,14 +52,14 @@ function reach(λ_i::Label, v_i::Int, v_j::Int, pg::ESPPRC_Instance)
     return is_reachable, arrival_time, new_load
 end
 
-function update_unreachable!(label::Label, pg::ESPPRC_Instance)
-    label.unreachable[label.path] .= 1
+function update_flag!(label::Label, pg::ESPPRC_Instance)
+    label.flag[label.path] .= 1
     v_j = label.path[end]
     for v_k in successors(v_j, pg)
-        if label.unreachable[v_k] == 0
+        if label.flag[v_k] == 0
             is_reachable, _, _ = reach(label, v_j, v_k, pg)
             if !is_reachable
-                label.unreachable[v_k] = 1
+                label.flag[v_k] = 1
             end
         end
     end
@@ -88,14 +69,14 @@ function extend(λ_i::Label, v_i::Int, v_j::Int, pg::ESPPRC_Instance)
     is_reachable, arrival_time, new_load = reach(λ_i, v_i, v_j, pg)
 
     if !is_reachable
-        λ_i.unreachable[v_j] = 1
+        λ_i.flag[v_j] = 1
         return nothing
     end
     new_cost = λ_i.cost + pg.cost[v_i, v_j]
     new_path = [λ_i.path; v_j]
 
-    label = Label(arrival_time, new_load, copy(λ_i.unreachable), new_cost, new_path)
-    update_unreachable!(label, pg)
+    label = Label(arrival_time, new_load, copy(λ_i.flag), new_cost, new_path)
+    update_flag!(label, pg)
 
     return label
 end
@@ -119,8 +100,8 @@ function is_dominated_by(label::Label, other_label::Label)
     elseif label.cost >= other_label.cost &&
                 label.time >= other_label.time &&
                 label.load >= other_label.load &&
-                # prod(label.unreachable .>= other_label.unreachable)
-                sum(label.unreachable) >= sum(other_label.unreachable) 
+                all(label.flag .>= other_label.flag)
+                # sum(label.flag) >= sum(other_label.flag) 
 
             # Big question here. 
             # Is sum enough to check dominance over unrechable?
@@ -185,9 +166,9 @@ function solveESPPRCfeillet(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
     end
 
     # Label at the origin
-    unreachable = zeros(Int, n_nodes)
-    init_label = Label(0.0, 0.0, unreachable, 0.0, [pg.origin])
-    update_unreachable!(init_label, pg)
+    flag = zeros(Int, n_nodes)
+    init_label = Label(0.0, 0.0, flag, 0.0, [pg.origin])
+    update_flag!(init_label, pg)
     push!(Λ[pg.origin], init_label)
 
     # Inititial node
@@ -201,7 +182,7 @@ function solveESPPRCfeillet(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
             F_ij = Label[]
 
             for λ_i in Λ[v_i]
-                if λ_i.unreachable[v_j] == 0
+                if λ_i.flag[v_j] == 0
                     label = extend(λ_i, v_i, v_j, pg)
                     if !isnothing(label)
                         push!(F_ij, label)

@@ -13,10 +13,10 @@ include("pulse.jl")
 include("relaxed_master_problem.jl")
 include("branch_and_bound.jl")
 
-export Pulse, ESPPRC_Instance, VRPTW_Instance, 
+export Pulse, Label, ESPPRC_Instance, VRPTW_Instance, 
         Node, Fleet, Request, SolomonDataset,
         solveESPPRCpulse, solve_vrp_bnb,
-        read_solomon_data, calculate_solomon_cost,
+        read_solomon_data, calculate_solomon_cost, calculate_path_time
         load_solomon, generate_solomon_vrptw_instance
 
 

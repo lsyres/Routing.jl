@@ -13,7 +13,7 @@ end
 
 
 ################################################
-# Pulse algorithm 
+# ESPPRC algorithm 
 ################################################
 mutable struct Pulse
     path    :: Array{Int64, 1}
@@ -30,6 +30,15 @@ function Base.show(io::IO, p::Pulse)
     println("         load=$(p.load)")
     println("         time=$(p.time)")
 end
+
+mutable struct Label
+    time        ::Float64
+    load        ::Float64
+    flag        ::Vector{Int}
+    cost        ::Float64
+    path        ::Vector{Int}
+end
+
 mutable struct ESPPRC_Instance
     origin      :: Int64
     destination :: Int64

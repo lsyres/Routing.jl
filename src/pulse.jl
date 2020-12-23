@@ -52,7 +52,7 @@ function isfeasible(pulse::Pulse, pg::ESPPRC_Instance)
 
 end
 
-function calculate_time(path::Array, pg::ESPPRC_Instance)
+function calculate_path_time(path::Array, pg::ESPPRC_Instance)
     total_time = 0
     for k in 1:length(path)-1
         i, j = path[k], path[k+1]
@@ -80,8 +80,8 @@ function should_rollback(p::Pulse, pg::ESPPRC_Instance)
     path_p = [p.path; p.next]
     path_pp = [p.path[1:end-1]; p.next]
 
-    time_p = calculate_time(path_p, pg)
-    time_pp = calculate_time(path_pp, pg)
+    time_p = calculate_path_time(path_p, pg)
+    time_pp = calculate_path_time(path_pp, pg)
 
     if cost_pp <= cost_p && time_pp <= time_p
         # dominated, should rollback

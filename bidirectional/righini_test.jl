@@ -4,7 +4,7 @@
 
 using VRPTW
 
-include("feillet.jl")
+include("righini.jl")
 
 using Test 
 
@@ -117,7 +117,7 @@ ei = ESPPRC_Instance(
 
 
 @time sol = solveESPPRCpulse(ei)
-@time best_label, labelset = solveESPPRCfeillet(ei)
+@time best_label, labelset = solveESPPRCrighini(ei)
 
 println("done")
 

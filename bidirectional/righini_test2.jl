@@ -4,7 +4,7 @@
 
 using VRPTW
 
-include("feillet.jl")
+include("righini.jl")
 
 using Test 
 
@@ -14,7 +14,7 @@ Random.seed!(123432)
 using ElasticArrays
 
 dataset_name = "C202_050"
-dataset_name = "C101_025"
+dataset_name = "C101_050"
 
 data_file_path = dataset_name * ".xml"
 data_file_path = joinpath(@__DIR__, "..", "solomon-1987", data_file_path)
@@ -86,7 +86,7 @@ ei = ESPPRC_Instance(
 
 
 @time sol = solveESPPRCpulse(ei)
-@time lab, labelset = solveESPPRCfeillet(ei)
+@time lab, labelset = solveESPPRCrighini(ei)
 
 @show sol.cost, sol.load, sol.time
 @show lab.cost, lab.load, lab.time
@@ -119,38 +119,5 @@ function show_details(path, pg::ESPPRC_Instance)
 end
 
 
-# show_details(sol.path, pg)
-# show_details(lab.path, pg)
-
-# show_details([51, 20, 22, 31, 2, 6, 50, 32, 33, 37, 36, 7], pg)
-# show_details([51, 20, 22, 31, 2, 6, 50, 32, 34, 12, 38, 7], pg)
-
-
-# for i in 1:length(sol.path)
-#     println("--"^20)
-#     @show i, sol.path[i], sol.path[1:i]
-#     find_min_cost_label!(labelset[sol.path[i]])
-#     for label in labelset[36]
-#         if label.path == sol.path[1:i]
-#             @show label.cost, label.path, label.unreachable[sol.path[i+1]]
-#         end
-#     end
-#     for label in labelset[7]
-#         if label.path == sol.path[1:i]
-#             @show label.cost, label.path, label.unreachable[sol.path[i+1]]
-#         end
-#     end    
-# end
-
-
-
-# println("Route: ", sol.path)
-# println("Total Cost = ", sol.cost)
-# println("Total Load = ", sol.load)
-# println("Total Time = ", sol.time)
-# -129.43392203005823
-# @assert isapprox(-129.43392203005823, lab.cost, atol=1e-7)
-
-# @testset "ESPPRC-Example" begin
-#     @test isapprox(sol.cost, -1.124519917849354)
-# end
+# show_details(sol.path, ei)
+# show_details(lab.path, ei)
