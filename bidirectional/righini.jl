@@ -327,13 +327,17 @@ function solveESPPRCrighini(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
     min_all_bw = Inf 
     min_bw = fill(Inf, n_nodes)
     min_fw = fill(Inf, n_nodes)
+    n_fw_labels = 0
+    n_bw_labels = 0
     for v_i in set_N
         for λ_i in Λ_fw[v_i]
             min_fw[v_i] = min(min_fw[v_i], λ_i.cost)
+            n_fw_labels += 1
         end
         for λ_i in Λ_bw[v_i]
             min_bw[v_i] = min(min_bw[v_i], λ_i.cost)
             min_all_bw = min(min_all_bw, λ_i.cost)
+            n_bw_labels += 1
         end
     end
     UB = Inf
@@ -362,7 +366,7 @@ function solveESPPRCrighini(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
     join_cpu_time = time() - t0
 
     @show forward_cpu_time, backward_cpu_time, join_cpu_time
-    @show size(Λ_fw), size(Λ_bw), size(final_labels)
+    @show n_fw_labels, n_bw_labels, size(final_labels)
 
     best_label = find_min_cost_label!(final_labels)
     return best_label, Λ_fw
