@@ -10,7 +10,7 @@ using Test
 
 # For testing purpose
 using Random
-# Random.seed!(123432)
+Random.seed!(23423)
 using ElasticArrays
 
 dataset_name = "C202_050"
@@ -81,19 +81,7 @@ ei = ESPPRC_Instance(
 
 
 
-##############################################################################################################
-
-
-@time sol = solveESPPRCpulse(ei)
-@time lab, labelset = solveESPPRCrighini(ei)
-
-@show sol.cost, sol.load, sol.time
-@show lab.cost, lab.load, lab.time
-@show sol.path
-@show lab.path
-@assert isapprox(sol.cost, lab.cost, atol=1e-7)
-
-println("done")
+##################################################
 
 
 
@@ -118,5 +106,23 @@ function show_details(path, pg::ESPPRC_Instance)
 end
 
 
-# show_details(sol.path, ei)
-# show_details(lab.path, ei)
+############################################################
+
+@time sol = solveESPPRCpulse(ei)
+@time lab1, labelset1 = monodirectional(ei)
+@time lab2, labelset2 = bidirectional(ei)
+
+
+@show sol.cost, sol.load, sol.time
+@show lab1.cost, lab1.load, lab1.time
+@show lab2.cost, lab2.load, lab2.time
+@show sol.path
+@show lab1.path
+@show lab2.path
+@assert isapprox(sol.cost, lab.cost, atol=1e-7)
+
+println("done")
+
+show_details(sol.path, ei)
+show_details(lab1.path, ei)
+show_details(lab2.path, ei)

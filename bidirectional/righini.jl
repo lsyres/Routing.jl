@@ -146,7 +146,16 @@ function is_identical(label::Label, other_label::Label)
 
     if is_same
         # Exactly the same path
-        @assert has_same_values
+        if !has_same_values
+            @warn("same path, but different values")
+            @show label.path, other_label.path
+            @show label.cost, other_label.cost
+            @show label.time, other_label.time 
+            @show label.load, other_label.load
+            @show dominate(label, other_label)
+            @show dominate(other_label, label)
+            @show label.flag, other_label.flag 
+        end
         return true
     else 
         return false
@@ -249,7 +258,138 @@ function select_node!(set_E, pg::ESPPRC_Instance)
 end
 
 
-function solveESPPRCrighini(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
+function forward_search!(v_i::Int, Λ_fw::Array, set_E::Array, pg::ESPPRC_Instance; max_time=Inf)
+    # Forward Extension            
+    for λ_i in Λ_fw[v_i]
+        if λ_i.time <= max_time
+            for v_j in successors(v_i, pg)
+                if λ_i.flag[v_j] == 0 && !in(v_j, λ_i.path)
+                    label = forward_extend(λ_i, v_i, v_j, pg)
+                    if !isnothing(label)
+                        is_updated = EFF!(Λ_fw, label, v_j)
+                        if is_updated
+                            push!(set_E, v_j)
+                        end    
+                    end
+                end
+            end
+        end
+    end
+end
+
+function backward_search!(v_i::Int, Λ_bw::Array, set_E::Array, pg::ESPPRC_Instance, max_T::Float64; max_time=Inf)
+    for λ_i in Λ_bw[v_i]
+        if λ_i.time < max_time
+            for v_k in predecessors(v_i, pg)
+                if λ_i.flag[v_k] == 0 && !in(v_k, λ_i.path)
+                    label = backward_extend(λ_i, v_i, v_k, pg, max_T)
+                    if !isnothing(label)
+                        is_updated = EFF!(Λ_bw, label, v_k)
+                        if is_updated
+                            push!(set_E, v_k)
+                        end    
+                    end
+                end
+            end
+        end
+    end
+end
+
+
+function join_label_sets(Λ_fw, Λ_bw, max_T, pg::ESPPRC_Instance)
+    n_nodes = length(pg.early_time)
+    set_N = 1:n_nodes
+
+    # Finding the minimum cost among labels
+    min_all_bw = Inf 
+    min_bw = fill(Inf, n_nodes)
+    min_fw = fill(Inf, n_nodes)
+    count_fw_labels = 0
+    count_bw_labels = 0
+    for v_i in set_N
+        for λ_i in Λ_fw[v_i]
+            min_fw[v_i] = min(min_fw[v_i], λ_i.cost)
+            count_fw_labels += 1
+        end
+        for λ_i in Λ_bw[v_i]
+            min_bw[v_i] = min(min_bw[v_i], λ_i.cost)
+            min_all_bw = min(min_all_bw, λ_i.cost)
+            count_bw_labels += 1
+        end
+    end
+    UB = Inf
+
+    final_labels = Label[]
+    # Join between forward and backward paths
+    for v_i in set_N
+        min_c = minimum([pg.cost[v_i,j] for j in set_N if j!=v_i])
+        if min_fw[v_i] + min_c + min_all_bw < UB
+            for λ_i in Λ_fw[v_i]
+                if λ_i.cost + min_c + min_all_bw < UB 
+                    for v_j in set_N
+                        if λ_i.cost + pg.cost[v_i,v_j] + min_bw[v_j] < UB 
+                            for λ_j in Λ_bw[v_j]
+                                if λ_i.cost + pg.cost[v_i,v_j] + λ_j.cost < UB 
+                                    new_cost = join_labels!(final_labels,λ_i, λ_j, pg, max_T)
+                                    UB = min(UB, new_cost)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return final_labels, count_fw_labels, count_bw_labels
+end
+
+
+
+function monodirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
+    # Feillet, D., Dejax, P., Gendreau, M., Gueguen, C., 2004. An exact algorithm for the elementary shortest path problem with resource constraints: Application to some vehicle routing problems. Networks 44, 216–229. https://doi.org/10.1002/net.20033
+
+    pg = deepcopy(org_pg)
+    graph_reduction!(pg)
+
+    n_nodes = length(pg.early_time)
+    set_N = 1:n_nodes
+
+    # Initial Label Set
+    Λ_fw = Vector{Vector{Label}}(undef, n_nodes)
+    for v_i in set_N
+        Λ_fw[v_i] = Label[]
+    end
+
+    # Label at the origin
+    unreachable = zeros(Int, n_nodes)
+    init_label = Label(0.0, 0.0, unreachable, 0.0, [pg.origin])
+    update_flag!(init_label, pg)
+    push!(Λ_fw[pg.origin], init_label)
+
+    # Inititial search nodes
+    set_E = [pg.origin]
+
+    forward_cpu_time = 0
+
+    # Search
+    while !isempty(set_E)
+        # v_i = set_E[1]
+        v_i = select_node!(set_E, pg)
+        forward_search!(v_i, Λ_fw, set_E, pg)
+        setdiff!(set_E, v_i)
+    end
+
+    final_labels = Λ_fw[pg.destination]
+    @show size(final_labels)
+
+    best_label = find_min_cost_label!(final_labels)
+    return best_label, final_labels
+
+end
+
+function bidirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
+    # Righini, G., Salani, M., 2006. Symmetry helps: Bounded bi-directional dynamic programming for the elementary shortest path problem with resource constraints. Discrete Optimization 3, 255–273. https://doi.org/10.1016/j.disopt.2006.05.007
+
     pg = deepcopy(org_pg)
     graph_reduction!(pg)
 
@@ -288,88 +428,16 @@ function solveESPPRCrighini(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
     while !isempty(set_E)
         # v_i = set_E[1]
         v_i = select_node!(set_E, pg)
-
-        # Forward Extension            
-        for λ_i in Λ_fw[v_i]
-            if λ_i.time < max_T / 2
-                for v_j in successors(v_i, pg)
-                    if λ_i.flag[v_j] == 0 && !in(v_j, λ_i.path)
-                        label = forward_extend(λ_i, v_i, v_j, pg)
-                        if !isnothing(label)
-                            is_updated = EFF!(Λ_fw, label, v_j)
-                            if is_updated
-                                push!(set_E, v_j)
-                            end    
-                        end
-                    end
-                end
-            end
-        end
-
-        # Backward Extension
-        for λ_i in Λ_bw[v_i]
-            if λ_i.time < max_T / 2
-                for v_k in predecessors(v_i, pg)
-                    if λ_i.flag[v_k] == 0 && !in(v_k, λ_i.path)
-                        label = backward_extend(λ_i, v_i, v_k, pg, max_T)
-                        if !isnothing(label)
-                            is_updated = EFF!(Λ_bw, label, v_k)
-                            if is_updated
-                                push!(set_E, v_k)
-                            end    
-                        end
-                    end
-                end
-            end
-        end
-
+        forward_search!(v_i, Λ_fw, set_E, pg; max_time=max_T/2)
+        backward_search!(v_i, Λ_bw, set_E, pg, max_T; max_time=max_T/2)
         setdiff!(set_E, v_i)
     end
 
-    # Finding the minimum cost among labels
-    min_all_bw = Inf 
-    min_bw = fill(Inf, n_nodes)
-    min_fw = fill(Inf, n_nodes)
-    n_fw_labels = 0
-    n_bw_labels = 0
-    for v_i in set_N
-        for λ_i in Λ_fw[v_i]
-            min_fw[v_i] = min(min_fw[v_i], λ_i.cost)
-            n_fw_labels += 1
-        end
-        for λ_i in Λ_bw[v_i]
-            min_bw[v_i] = min(min_bw[v_i], λ_i.cost)
-            min_all_bw = min(min_all_bw, λ_i.cost)
-            n_bw_labels += 1
-        end
-    end
-    UB = Inf
+    final_labels, count_fw_labels, count_bw_labels = join_label_sets(Λ_fw, Λ_bw, max_T, pg)
 
-    final_labels = Label[]
-    # Join between forward and backward paths
-    for v_i in set_N
-        min_c = minimum([pg.cost[v_i,j] for j in set_N if j!=v_i])
-        if min_fw[v_i] + min_c + min_all_bw < UB
-            for λ_i in Λ_fw[v_i]
-                if λ_i.cost + min_c + min_all_bw < UB 
-                    for v_j in set_N
-                        if λ_i.cost + pg.cost[v_i,v_j] + min_bw[v_j] < UB 
-                            for λ_j in Λ_bw[v_j]
-                                if λ_i.cost + pg.cost[v_i,v_j] + λ_j.cost < UB 
-                                    new_cost = join_labels!(final_labels,λ_i, λ_j, pg, max_T)
-                                    UB = min(UB, new_cost)
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    @show n_fw_labels, n_bw_labels, size(final_labels)
+    @show count_fw_labels, count_bw_labels, size(final_labels)
 
     best_label = find_min_cost_label!(final_labels)
-    return best_label, Λ_fw
+    return best_label, final_labels
 
 end
