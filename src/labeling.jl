@@ -135,13 +135,11 @@ function is_identical(label::Label, other_label::Label)
         # Exactly the same path
         if !has_same_values
             @warn("same path, but different values")
-            @show label.path, other_label.path
-            @show label.cost, other_label.cost
-            @show label.time, other_label.time 
-            @show label.load, other_label.load
+            show_label(label)
+            show_label(other_label)
             @show dominate(label, other_label)
             @show dominate(other_label, label)
-            @show label.flag, other_label.flag 
+            @show [label.flag'; other_label.flag']
         end
         return true
     else 
