@@ -85,7 +85,7 @@ vrptw = VRPTW_Instance(
 )
 
 # solve
-@time routes, total_distance = solve_vrp_bnb(vrptw)
+@time routes, total_distance = solve_vrp_bnb(vrptw, pricing_method="pulse")
 
 @show total_distance
 @show routes
