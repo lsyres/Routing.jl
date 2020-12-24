@@ -149,7 +149,7 @@ This package implements the following algorithms:
   - Callable by `solveESPPRC(problem::ESPPRC_Instance, method="pulse")`
   - If you need a faster c++ implementation for this algorithm, I recommend https://github.com/DouYishun/vrp-espprc.
 
-- A monodirectional dynamic programming method, as described in: [Feillet, D., Dejax, P., Gendreau, M., Gueguen, C., 2004. An exact algorithm for the elementary shortest path problem with resource constraints: Application to some vehicle routing problems. Networks 44, 216–229](https://doi.org/10.1002/net.20033)
+- A monodirectional dynamic programming method, as described in: [Feillet, D., Dejax, P., Gendreau, M., Gueguen, C., 2004. An exact algorithm for the elementary shortest path problem with resource constraints: Application to some vehicle routing problems. Networks 44, 216–229](https://onlinelibrary.wiley.com/doi/abs/10.1002/net.20033)
   - Callable by `solveESPPRC(problem::ESPPRC_Instance, method="monodirectional")`
   - Currently, the reachability concept is not implemented.
 
