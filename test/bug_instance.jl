@@ -2,18 +2,25 @@
 # The example given by Google OR-Tools https://developers.google.com/optimization/routing/vrp
 # Modified
 
-using VRPTW
 
-include("labeling.jl")
+# Random.seed!(34534)
+# dataset_name = "C102_025"
+
+# Random.seed!(23423)
+# dataset_name = "C102_100"
+
+
+# using VRPTW
+include("../src/VRPTWinclude.jl")
+include("espprc_test_functions.jl")
 
 using Test 
 
 # For testing purpose
 using Random
-Random.seed!(23423)
-using ElasticArrays
+Random.seed!(23423); dataset_name = "C102_100"
 
-dataset_name = "C102_100"
+# Random.seed!(34534); dataset_name = "C102_025"
 
 data_file_path = dataset_name * ".xml"
 data_file_path = joinpath(@__DIR__, "..", "solomon-1987", data_file_path)
@@ -50,9 +57,10 @@ origin = depot0
 destination = depot_dummy
 capacity = fleet.capacity
 
-# alpha = rand(0:20, n_nodes) * 2
+# alpha = rand(0:20, n_nodes)
 # cost_mtx = t - repeat(alpha, 1, n_nodes)
 cost_mtx = t .* (rand(size(t)...) .- 0.25)
+# cost_mtx = t
 
 resrc_mtx = zeros(n_nodes, n_nodes)
 for i in N, j in N 
@@ -78,53 +86,37 @@ ei = ESPPRC_Instance(
     service_time
 )
 
-
-
 ##################################################
-
-
-
-function show_details(path, pg::ESPPRC_Instance)
-    println("--------------Path Details ----------------------")
-    println(path)
-    j = path[1]
-    arr_time = 0.0
-    load = 0.0
-    cost = 0.0
-    cost_change = 0.0
-    println("At node $j: time=$(round(arr_time)), load=$(round(load)), cost=$(round(cost)), cost_change=$cost_change")
-    for k in 2:length(path)
-        i, j = path[k-1], path[k]
-        arr_time = max(arr_time + pg.service_time[i] + pg.time[i,j], pg.early_time[j])
-        load += pg.load[i,j]
-        cost += pg.cost[i,j]
-        cost_change = pg.cost[i,j]
-        println("At node $j: time=$(round(arr_time)), load=$(round(load)), cost=$(round(cost)), cost_change=$cost_change")    
-    end      
-    println("-"^50)  
-end
-
 
 ############################################################
 
-@time sol = solveESPPRCpulse(ei)
-@time lab1, labelset1 = monodirectional(ei)
-@time lab2, labelset2 = bidirectional(ei)
+@time sol = solveESPPRC(ei, method="pulse")
+# @time lab1 = solveESPPRC(ei, method="monodirectional")
+@time lab2 = solveESPPRC(ei, method="bidirectional")
 
 
 @show sol.cost, sol.load, sol.time
-@show lab1.cost, lab1.load, lab1.time
+# @show lab1.cost, lab1.load, lab1.time
 @show lab2.cost, lab2.load, lab2.time
 @show sol.path
-@show lab1.path
+# @show lab1.path
 @show lab2.path
 
 println("done")
 
-show_details(sol.path, ei)
-show_details(lab1.path, ei)
-show_details(lab2.path, ei)
+# show_details(sol.path, ei)
+# show_details(lab1.path, ei)
+# show_details(lab2.path, ei)
 
 
-@assert isapprox(sol.cost, lab1.cost, atol=1e-7)
-@assert isapprox(lab1.cost, lab2.cost, atol=1e-7)
+# Random.seed!(23423)
+# dataset_name = "C102_100"
+# [101, 3, 54, 94, 38, 1, 59, 91, 34, 102]
+# -91.25575649162371, 140.0
+# @show cost = -91.25575649162371
+# @show load = 140.0
+# @show path = [101, 3, 54, 94, 38, 1, 59, 91, 34, 102]
+# @test isapprox(cost, lab1.cost, atol=1e-7)
+
+@test isapprox(sol.cost, lab1.cost, atol=1e-7)
+@test isapprox(lab1.cost, lab2.cost, atol=1e-7)

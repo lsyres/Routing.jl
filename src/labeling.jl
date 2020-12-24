@@ -442,7 +442,6 @@ function bidirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf)
         forward_search!(v_i, Λ_fw, set_E, Label[], pg; max_time=max_T/2)
         backward_search!(v_i, Λ_bw, set_E, pg, max_T; max_time=max_T/2)
         setdiff!(set_E, v_i)
-        @show set_E
     end
 
     final_labels, count_fw_labels, count_bw_labels = join_label_sets(Λ_fw, Λ_bw, max_T, pg)
