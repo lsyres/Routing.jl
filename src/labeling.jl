@@ -255,7 +255,11 @@ function join_labels!(final_labels, λ_i::Label, λ_j::Label, pg::ESPPRC_Instanc
 end
 
 function select_node!(set_E, pg::ESPPRC_Instance)
-    return set_E[1]
+    if isempty(set_E)
+        @error("The candidate set is empty.")
+    else
+        return set_E[1]
+    end
 end
 
 

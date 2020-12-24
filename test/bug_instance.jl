@@ -12,7 +12,7 @@
 
 # using VRPTW
 include("../src/VRPTWinclude.jl")
-include("espprc_test_functions.jl")
+include("debugging.jl")
 
 using Test 
 
@@ -91,15 +91,15 @@ ei = ESPPRC_Instance(
 ############################################################
 
 @time sol = solveESPPRC(ei, method="pulse")
-# @time lab1 = solveESPPRC(ei, method="monodirectional")
+@time lab1 = solveESPPRC(ei, method="monodirectional")
 @time lab2 = solveESPPRC(ei, method="bidirectional")
 
 
 @show sol.cost, sol.load, sol.time
-# @show lab1.cost, lab1.load, lab1.time
+@show lab1.cost, lab1.load, lab1.time
 @show lab2.cost, lab2.load, lab2.time
 @show sol.path
-# @show lab1.path
+@show lab1.path
 @show lab2.path
 
 println("done")
