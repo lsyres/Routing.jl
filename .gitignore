@@ -1,1 +1,8 @@
 /Manifest.toml
+
+*.o
+*.dylib
+*.so
+*.out
+
+.vscode
