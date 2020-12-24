@@ -81,7 +81,7 @@ This format is consistent with the format used by [VRP-REP.org](http://www.vrp-r
 
 One important difference is that the node id for the depot is the largest among all nodes, instead of 0. The node id numbering begins with 1.
 
-For an example of loading and solving the Solomon instances, see [test/solomon_example.jl](https://github.com/chkwon/VRPTW.jl/blob/master/test/solomon_example.jl) 
+For an example of loading and solving the Solomon instances, see [test/solve_solomon_vrptw.jl](https://github.com/chkwon/VRPTW.jl/blob/master/test/solve_solomon_vrptw.jl) 
 
 <img src="https://github.com/chkwon/VRPTW.jl/raw/master/R102_025.png" width=500>
 
