@@ -64,12 +64,10 @@ function backward_reach(λ_i::Label, v_i::Int, v_k::Int, pg::ESPPRC_Instance, ma
     return is_reachable, min_time_required, new_load
 end
 
-function update_flag!(label::Label, pg::ESPPRC_Instance; direction="backward")
-    label.flag .= 0
-    label.flag[label.path] .= 1
-    
+function update_flag!(label::Label, pg::ESPPRC_Instance; direction="backward")    
     if direction=="forward"
-        # v_j = label.path[end]
+        v_j = label.path[end]
+        label.flag[v_j] = 1
         # for v_k in successors(v_j, pg)
         #     if label.flag[v_k] == 0
         #         is_reachable, _, _ = forward_reach(label, v_j, v_k, pg)
@@ -79,6 +77,8 @@ function update_flag!(label::Label, pg::ESPPRC_Instance; direction="backward")
         #     end
         # end
     elseif direction=="backward"
+        v_j = label.path[1]
+        label.flag[v_j] = 1
     
     elseif direction=="join"
     
