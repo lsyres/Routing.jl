@@ -4,7 +4,7 @@ function predecessors(v_i, pg::ESPPRC_Instance)
         return []
     else
         pred = setdiff(findall(x -> x < Inf, pg.cost[:, v_i]), [v_i])
-        sort!(pred, by=x->pg.time[x, v_i])
+        # sort!(pred, by=x->pg.time[x, v_i])
         return pred
     end
 end
@@ -14,7 +14,7 @@ function successors(v_i, pg::ESPPRC_Instance)
         return []
     else
         succ = setdiff(findall(x -> x < Inf, pg.cost[v_i, :]), [v_i])
-        sort!(succ, by=x->pg.time[v_i, x])
+        # sort!(succ, by=x->pg.time[v_i, x])
         return succ
     end
 end

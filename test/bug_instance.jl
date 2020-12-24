@@ -118,5 +118,5 @@ println("done")
 # @show path = [101, 3, 54, 94, 38, 1, 59, 91, 34, 102]
 # @test isapprox(cost, lab1.cost, atol=1e-7)
 
-@test isapprox(sol.cost, lab1.cost, atol=1e-7)
-@test isapprox(lab1.cost, lab2.cost, atol=1e-7)
+# @test isapprox(sol.cost, lab2.cost, atol=1e-7)
+# @test isapprox(lab1.cost, lab2.cost, atol=1e-7)
