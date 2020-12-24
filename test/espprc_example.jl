@@ -6,7 +6,7 @@ using Test
 using Random
 
 # For Debugging
-include("espprc_test_functions.jl")
+include("debugging.jl")
 
 
 # We need to construct a ESPPRC_Instance instance

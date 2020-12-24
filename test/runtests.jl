@@ -22,14 +22,14 @@ test_start_time = time()
 
             @testset "$name" begin
                 println("-- Solomon Instance $name --")
-                @time routes, objective_value = solve_vrp_bnb(vrptw);
+                @time routes, objective_value = solve_vrp_bnb(vrptw, pricing_method="pulse");
                 @test isapprox(objective_value, val, atol=1e-7)
             end
         end
     end
 
-    include("or-tools-example.jl")
-    include("espprc-example.jl")
+    include("vrptw_example.jl")
+    include("espprc_example.jl")
 
 end
 

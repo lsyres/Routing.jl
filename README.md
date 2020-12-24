@@ -34,7 +34,7 @@ struct VRPTW_Instance
     max_travel_time ::Float64
 end
 ```
-The generation of `VRPTW_Instance` is described in this example: [`test/or-tools-example.jl`](https://github.com/chkwon/VRPTW.jl/blob/master/test/or-tools-example.jl).
+The generation of `VRPTW_Instance` is described in this example: [`test/vrptw_example.jl`](https://github.com/chkwon/VRPTW.jl/blob/master/test/vrptw_example.jl).
 
 ### `SolomonDataset`
 
@@ -81,7 +81,7 @@ This format is consistent with the format used by [VRP-REP.org](http://www.vrp-r
 
 One important difference is that the node id for the depot is the largest among all nodes, instead of 0. The node id numbering begins with 1.
 
-For an example of loading and solving the Solomon instances, see [test/solve_solomon_vrptw.jl](https://github.com/chkwon/VRPTW.jl/blob/master/test/solve_solomon_vrptw.jl) 
+For an example of loading and solving the Solomon instances, see [test/solomon_example.jl](https://github.com/chkwon/VRPTW.jl/blob/master/test/solomon_example.jl) 
 
 <img src="https://github.com/chkwon/VRPTW.jl/raw/master/R102_025.png" width=500>
 
@@ -138,7 +138,7 @@ mutable struct ESPPRC_Instance
 end
 ```
 
-See this example for details: [`test/espprc-example.jl`](https://github.com/chkwon/VRPTW.jl/blob/master/test/espprc-example.jl).
+See this example for details: [`test/espprc_example.jl`](https://github.com/chkwon/VRPTW.jl/blob/master/test/espprc_example.jl).
 
 ### ESPPRC Algorithm
 
