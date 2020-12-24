@@ -1,0 +1,11 @@
+gcc -o oneplusone.o -c oneplusone.c   
+
+gcc -Wl,-undefined -Wl,dynamic_lookup -o liboneplusone.dylib oneplusone.o
+
+
+
+gcc -Wl,-undefined -Wl,dynamic_lookup oneplusone.c -o liboneplusone.dylib 
+
+
+gcc -fPIC -shared test.c -o libtest.so
+
