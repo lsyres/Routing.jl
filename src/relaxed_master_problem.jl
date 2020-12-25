@@ -49,7 +49,7 @@ end
 
 
 
-function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-1), tw_reduce=true, pricing_method="monodirectional")
+function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-1), tw_reduce=true, pricing_method="pulse")
     if tw_reduce 
         time_window_reduction!(vrptw)
     end

@@ -122,7 +122,7 @@ function  branch_decision!(next_branches, best_sol, sol_y, sol_routes, sol_obj, 
     end
 end
 
-function solve_BnB!(best_sol::BestIncumbent, branches; pricing_method="monodirectional")
+function solve_BnB!(best_sol::BestIncumbent, branches; pricing_method="pulse")
     next_branches = Branch[]
 
     while !isempty(branches)
@@ -187,7 +187,7 @@ function generate_branch_priority(root_y, root_routes, vrptw)
     return sort(collect(branch_score_dict), by= x->x[2])
 end
 
-function initial_BnB!(best_sol, vrptw, root_y, root_routes, root_obj; pricing_method="monodirectional")
+function initial_BnB!(best_sol, vrptw, root_y, root_routes, root_obj; pricing_method="pulse")
     branch_priority = generate_branch_priority(root_y, root_routes, vrptw)
     new_vrptw = deepcopy(vrptw)
     history = OrderedDict()
@@ -227,7 +227,7 @@ function initial_BnB!(best_sol, vrptw, root_y, root_routes, root_obj; pricing_me
     
 end
 
-function complete_BnB!(best_sol, vrptw, root_y, root_routes, root_obj; pricing_method="monodirectional")
+function complete_BnB!(best_sol, vrptw, root_y, root_routes, root_obj; pricing_method="pulse")
     # Most Priority is at the end.
     branch_priority = generate_branch_priority(root_y, root_routes, vrptw)
 
@@ -255,7 +255,7 @@ function complete_BnB!(best_sol, vrptw, root_y, root_routes, root_obj; pricing_m
 
 end
 
-function solve_vrp_bnb(vrptw::VRPTW_Instance; tw_reduce=true, pricing_method="monodirectional")
+function solve_vrp_bnb(vrptw::VRPTW_Instance; tw_reduce=true, pricing_method="pulse")
     println("Pricing method = $pricing_method")
 
     start_time = time()
