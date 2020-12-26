@@ -59,17 +59,14 @@ function bounding_time_index(current_time::Float64, btimes::Vector{Float64})
 end
 
 
-function isbounded(p::Label, primal_bounds::Vector{Label}, lower_bounds::Matrix{Label}, btimes::Vector{Float64}, pg::ESPPRC_Instance, bounding::Bool; root=pg.origin)
+function isbounded(p::Label, primal_bounds::Vector{Label}, lower_bounds::Matrix{Float64}, btimes::Vector{Float64}, pg::ESPPRC_Instance, bounding::Bool; root=pg.origin)
     if isempty(primal_bounds) || isempty(primal_bounds)
         @warn("isempty primal_bounds or primal_bounds")
         return false
     end
     
     v_i = p.path[end]
-    upper_bound = primal_bounds[root].cost
-    min_lower_bound = minimum([lower_bounds[root, t].cost for t in 1:length(btimes)])
-
-    bound = bounding ? min_lower_bound : upper_bound
+    bound = bounding ? min_lower_bound = minimum(lower_bounds[root, :]) : primal_bounds[root].cost
 
     # must use from the bound matrix B the lower closest value to τ available. 
     # time_values (sorted from greatest to smallest)
@@ -78,11 +75,11 @@ function isbounded(p::Label, primal_bounds::Vector{Label}, lower_bounds::Matrix{
     if k > length(btimes)
         # In this case, p.time < btimes[end]; no lower_bounds info available.
         return false
-    elseif lower_bounds[v_i, k].cost < Inf
+    elseif lower_bounds[v_i, k] < Inf
         @assert btimes[k] <= p.time
         # The condition below should be strict inequality. 
         # If it is set >=, then some problems cannot be solved optimally.
-        bounded = p.cost + lower_bounds[v_i, k].cost > bound + eps
+        bounded = p.cost + lower_bounds[v_i, k] > bound + eps
         return bounded
     else
         return false 
@@ -101,10 +98,11 @@ function bounding_scheme(btimes::Vector{Float64}, pg::ESPPRC_Instance)
     #     best_labels[i] = initialize_label(i, n_nodes; cost=Inf)
     # end
 
-    lower_bounds = Matrix{Label}(undef, n_nodes, length(btimes))
-    for i in 1:n_nodes, k in 1:length(btimes)
-        lower_bounds[i, k] = initialize_label(i, n_nodes; cost=Inf)
-    end    
+    # lower_bounds = Matrix{Label}(undef, n_nodes, length(btimes))
+    # for i in 1:n_nodes, k in 1:length(btimes)
+    #     lower_bounds[i, k] = initialize_label(i, n_nodes; cost=Inf)
+    # end    
+    lower_bounds = fill(Inf, n_nodes, length(btimes))
 
     bounding_iteration = 0
     for k in 1:length(btimes)
@@ -134,7 +132,7 @@ function bounding_scheme(btimes::Vector{Float64}, pg::ESPPRC_Instance)
 end # bounding_scheme
 
 
-function pulse_procedure!(p::Label, primal_bounds::Vector{Label}, lower_bounds::Matrix{Label}, btimes::Vector{Float64}, pg::ESPPRC_Instance; init_time=0.0, bounding=false, root=pg.origin)
+function pulse_procedure!(p::Label, primal_bounds::Vector{Label}, lower_bounds::Matrix{Float64}, btimes::Vector{Float64}, pg::ESPPRC_Instance; init_time=0.0, bounding=false, root=pg.origin)
     # current node
     v_i = p.path[end]
     if p.time > pg.late_time[v_i]
@@ -150,10 +148,10 @@ function pulse_procedure!(p::Label, primal_bounds::Vector{Label}, lower_bounds::
         if bounding
             k = bounding_time_index(init_time, btimes)
             if k <= length(btimes)
-                if p.cost < lower_bounds[root, k].cost - eps
+                if p.cost < lower_bounds[root, k] - eps
                     for kk in k:length(btimes)
                         # lower_bounds[root, kk] = deepcopy(p)
-                        lower_bounds[root, kk].cost = p.cost
+                        lower_bounds[root, kk] = p.cost
                     end            
                 end
             end
@@ -190,7 +188,7 @@ function pulse_procedure!(p::Label, primal_bounds::Vector{Label}, lower_bounds::
 end
 
 
-function solveESPPRCpulse(org_pg::ESPPRC_Instance; step=10, max_neg_cost_routes=Inf)
+function solveESPPRCpulse(org_pg::ESPPRC_Instance; step=-1, max_neg_cost_routes=Inf)
     pg = deepcopy(org_pg)
     graph_reduction!(pg)
 
@@ -199,7 +197,10 @@ function solveESPPRCpulse(org_pg::ESPPRC_Instance; step=10, max_neg_cost_routes=
     # Discrete Time Steps for Bounding
     time_ub = calculate_max_T(pg)
     time_lb = 0.1 * time_ub
-    step = Int(floor(time_ub*0.9 / 10)) + 1    
+    if step == -1 
+        step = Int(floor(time_ub*0.9 / 20)) + 1    
+    end
+    step = 10
     @show step
     btimes = collect(time_ub-step : -step : time_lb)
 

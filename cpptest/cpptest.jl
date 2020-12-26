@@ -4,7 +4,7 @@ using BenchmarkTools
 # For Debugging
 include("../src/VRPTWinclude.jl")
 
-Random.seed!(12323432)
+
 
 using Cxx, Libdl 
 const path_to_lib = pwd() 
@@ -13,7 +13,6 @@ addHeaderDir(path_to_lib, kind=C_System)
 Libdl.dlopen(joinpath(path_to_lib, "libespprc.dylib"), Libdl.RTLD_GLOBAL)
 cxxinclude("espprc.h")
 cxxinclude("vector")
-
 
 function solomon_to_cpp_data(s::SolomonDataset)
     # int x, y, demand, twl, twu, service_time;
@@ -75,9 +74,11 @@ end
 
 solomon_dataset_name = "C101_100"
 solomon = load_solomon(solomon_dataset_name)
-n_nodes = solomon.nodes |> length
-dual_var_org = (rand(n_nodes) * 20)
+num_nodes = solomon.nodes |> length
+# Random.seed!(12332)
 
+
+dual_var_org = (rand(num_nodes) * 20)
 dual_var_cpp = copy(dual_var_org)
 dual_var_cpp[1] = 0.0
 @time cpp_path = solveESPPRC_cpp(solomon, dual_var_cpp)
