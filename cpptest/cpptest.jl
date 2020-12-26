@@ -1,19 +1,20 @@
 using Test 
 using Random
-using Cxx, Libdl 
 using BenchmarkTools
-
-const path_to_lib = pwd() 
-@show path_to_lib
-
 # For Debugging
 include("../src/VRPTWinclude.jl")
 
+# Random.seed!(123132)
+
+
+
+using Cxx, Libdl 
+const path_to_lib = pwd() 
+@show path_to_lib
 addHeaderDir(path_to_lib, kind=C_System)
 Libdl.dlopen(joinpath(path_to_lib, "libespprc.dylib"), Libdl.RTLD_GLOBAL)
 cxxinclude("espprc.h")
 cxxinclude("vector")
-
 
 
 function solomon_to_cpp_data(s::SolomonDataset)
@@ -46,6 +47,46 @@ function solomon_to_cpp_data(s::SolomonDataset)
     end
     return data
 end
+
+
+
+function solveESPPRC_cpp(solomon, dual_var)
+    matrix_data = solomon_to_cpp_data(solomon)
+
+    n_nodes = length(matrix_data)+1
+    step = 10
+    start = 0
+    dest = n_nodes - 1
+    ut = matrix_data[1][5]
+    lt = 0.1 * ut
+    step = 200
+    # step = Int(round((ut - lt) / 15))
+
+    max_capacity = solomon.fleet.capacity
+
+    cxx_data = convert(cxxt"std::vector<std::vector<int>>", matrix_data)
+    cxx_dual_var = convert(cxxt"std::vector<double>", dual_var)
+
+    cppmodel = icxx"Espprc model($n_nodes, $start, $dest, $step, $lt, $ut, $max_capacity, $cxx_data, $cxx_dual_var); model;"
+    
+    cxx_path = icxx"std::vector<int> cxx_path = $cppmodel.espprc(); cxx_path;"
+    c = icxx" &$cxx_path[0];"
+    cSize = icxx" $(cxx_path).size(); "
+    j_path = unsafe_wrap(Array, c, cSize)
+    return convert(Vector{Int}, j_path) 
+end
+
+solomon_dataset_name = "C101_100"
+solomon = load_solomon(solomon_dataset_name)
+n_nodes = solomon.nodes |> length
+dual_var_org = (rand(n_nodes) * 20)
+
+dual_var_cpp = copy(dual_var_org)
+dual_var_cpp[1] = 0.0
+@time cpp_path = solveESPPRC_cpp(solomon, dual_var_cpp)
+@show cpp_path
+
+# readline()
 
 
 
@@ -116,43 +157,6 @@ function solomon_to_espprc(solomon::SolomonDataset, dual_var)
 end
 
 
-function solveESPPRC_cpp(solomon, dual_var)
-    matrix_data = solomon_to_cpp_data(solomon)
-
-    n_nodes = length(matrix_data)+1
-    step = 10
-    start = 0
-    dest = n_nodes - 1
-    ut = matrix_data[1][5]
-    lt = 0.1 * ut
-    step = 10 
-    # step = Int(round((ut - lt) / 15))
-
-    max_capacity = solomon.fleet.capacity
-
-    cxx_data = convert(cxxt"std::vector<std::vector<int>>", matrix_data)
-    cxx_dual_var = convert(cxxt"std::vector<double>", dual_var)
-
-    cppmodel = icxx"Espprc model($n_nodes, $start, $dest, $step, $lt, $ut, $max_capacity, $cxx_data, $cxx_dual_var); model;"
-    
-    cxx_path = icxx"std::vector<int> cxx_path = $cppmodel.espprc(); cxx_path;"
-    c = icxx" &$cxx_path[0];"
-    cSize = icxx" $(cxx_path).size(); "
-    j_path = unsafe_wrap(Array, c, cSize)
-    return convert(Vector{Int}, j_path) 
-end
-
-solomon_dataset_name = "C101_025"
-solomon = load_solomon(solomon_dataset_name)
-n_nodes = solomon.nodes |> length
-
-dual_var_org = (rand(n_nodes) * 20)
-
-dual_var_cpp = copy(dual_var_org)
-dual_var_cpp[1] = 0.0
-@time cpp_path = solveESPPRC_cpp(solomon, dual_var_cpp)
-@show cpp_path
-
 dual_var_pulse = [dual_var_org[2:end]; 0.0; 0.0]
 espprc = solomon_to_espprc(solomon, dual_var_pulse)
 @time sol = solveESPPRC(espprc, method="pulse")
@@ -165,7 +169,12 @@ cpp_path = [espprc.origin; cpp_path[2:end-1]; espprc.destination]
 @show calculate_path_cost(cpp_path, espprc.cost)
 @show calculate_path_cost(sol.path, espprc.cost)
 
+@test calculate_path_cost(cpp_path, espprc.cost) >= calculate_path_cost(sol.path, espprc.cost)
+if cpp_path != sol.path
+    @warn("Paths are different.")
+    @show cpp_path 
+    @show sol.path 
+end
 
-@test cpp_path == sol.path
 
 println("Done")

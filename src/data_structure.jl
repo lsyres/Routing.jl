@@ -49,10 +49,13 @@ mutable struct ESPPRC_Instance
     early_time  :: Vector{Float64}
     late_time   :: Vector{Float64}
     service_time:: Vector{Float64}
+    forward_star:: Vector{Vector{Int}}
     info        :: Dict{Any, Any}
 end
 function ESPPRC_Instance(origin, destination, capacity, cost, time, load, early_time, late_time, service_time)
-    return ESPPRC_Instance(origin, destination, capacity, cost, time, load, early_time, late_time, service_time, Dict())
+    n_nodes = length(service_time)
+    fs = save_forward_star(n_nodes, cost; sorted=true)
+    return ESPPRC_Instance(origin, destination, capacity, cost, time, load, early_time, late_time, service_time, fs, Dict())
 end
 ################################################
 

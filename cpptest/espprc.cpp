@@ -68,10 +68,10 @@ bool Espprc::check_bounds(int root, int cur, double time, double cost, bool flag
     double lower_bound = 0;
     tmp_counter2 ++;
 
-    if (!flag) {
-        // only in bounding scheme
-        std::cout << "time=" << time << ", time_incumbent=" << time_incumbent <<", step=" << step << std::endl;
-    }
+    // if (!flag) {
+    //     // only in bounding scheme
+    //     std::cout << "time=" << time << ", time_incumbent=" << time_incumbent <<", step=" << step << std::endl;
+    // }
 
     if (time < time_incumbent + step) {
         tmp_counter1 ++;
@@ -205,11 +205,17 @@ void Espprc::bounding_scheme() {
             pre_path[root] = path;
             bound_iter ++;
         }
-
+        std::cout << "idx=" << bound_index << ", time=" << time_incumbent << std::endl;
         overall_best_cost = primal_bound;
         time_incumbent -= step;
         bound_index += 1;
     }
+    // for (int root : bound_generation_order) {
+    //     for (int bi=0; bi<bound_index; bi++) {
+    //         std::cout << "idx=" << bi << ", root=" << root << ": " << lower_bound_matrix[bound_index][root].best_cost << std::endl;
+    //     }
+    // }
+
     std::cout << "bounding iteration: " << bound_iter << std::endl;
     std::cout << "bounding counter: " << bounding_counter << std::endl;
 }
@@ -217,6 +223,10 @@ void Espprc::bounding_scheme() {
 std::vector<int> Espprc::espprc() {
     // std::cout<<"---------bound begin---------\n";
     bounding_scheme();
+
+
+
+
     // std::cout << "tmp_counter1=" << tmp_counter1 << std::endl;
     // std::cout << "tmp_counter2=" << tmp_counter2 << std::endl;
     // std::cout<<"---------bound end---------\n";
