@@ -4,6 +4,7 @@ using ElasticArrays
 using DataStructures
 
 global counter = 0
+const eps = 1e-6
 
 include("data_structure.jl")
 include("utils.jl")

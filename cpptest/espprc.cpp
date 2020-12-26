@@ -121,25 +121,24 @@ bool Espprc::intersection(const std::vector<int>& path1, const std::vector<int>&
 bool Espprc::concat(int root, int cur, double time, double cost, double capacity, std::vector<int>& path, bool flag) {
     
     return false;
+    // int ix = int((upper_time - time) / step);
+    // Label lb;
     
-    int ix = int((upper_time - time) / step);
-    Label lb;
+    // if (time >= time_incumbent + step) lb = lower_bound_matrix[ix][cur];
     
-    if (time >= time_incumbent + step) lb = lower_bound_matrix[ix][cur];
-    
-    if (lb.vis && ix > 0 && capacity + lb.capacity_consumption <= max_capacity &&\
-            intersection(path, lb.path) && lb.best_cost == lower_bound_matrix[ix - 1][cur].best_cost) {
+    // if (lb.vis && ix > 0 && capacity + lb.capacity_consumption <= max_capacity &&\
+    //         intersection(path, lb.path) && lb.best_cost == lower_bound_matrix[ix - 1][cur].best_cost) {
         
-        if (flag) {
-            primal_bound = cost + lb.best_cost;
-        } else {
-            G.node_list[root].best_cost = cost + lb.best_cost;
-        }
+    //     if (flag) {
+    //         primal_bound = cost + lb.best_cost;
+    //     } else {
+    //         G.node_list[root].best_cost = cost + lb.best_cost;
+    //     }
 
-        path.insert(path.end(), lb.path.begin(), lb.path.end());
-        return true; // success concat
-    }
-    return false;
+    //     path.insert(path.end(), lb.path.begin(), lb.path.end());
+    //     return true; // success concat
+    // }
+    // return false;
 }
 
 
@@ -150,10 +149,15 @@ void Espprc::dynamic_update(int cur, const std::vector<int>& opt_path) {
 }
 
 void Espprc::pulse_procedure(int root, int cur, double cost, double capacity, double time, std::vector<int>& path, bool flag) {
-    bounding_counter ++;
     if (time < G.node_list[cur].twl) time = G.node_list[cur].twl;
-    if (!is_feasible(cur, capacity, time) || !check_bounds(root, cur, time, cost, flag) || !rollback(cur, cost, path))
+    if (!is_feasible(cur, capacity, time)) 
         return;
+
+    bounding_counter ++;
+
+    if (!check_bounds(root, cur, time, cost, flag) || !rollback(cur, cost, path))
+        return;
+
     if (!concat(root, cur, time, cost, capacity, path, flag)) {
         std::vector<int> opt_path;
         path.push_back(cur);
@@ -205,7 +209,7 @@ void Espprc::bounding_scheme() {
             pre_path[root] = path;
             bound_iter ++;
         }
-        std::cout << "idx=" << bound_index << ", time=" << time_incumbent << std::endl;
+        // std::cout << "idx=" << bound_index << ", time=" << time_incumbent << std::endl;
         overall_best_cost = primal_bound;
         time_incumbent -= step;
         bound_index += 1;
@@ -223,9 +227,6 @@ void Espprc::bounding_scheme() {
 std::vector<int> Espprc::espprc() {
     // std::cout<<"---------bound begin---------\n";
     bounding_scheme();
-
-
-
 
     // std::cout << "tmp_counter1=" << tmp_counter1 << std::endl;
     // std::cout << "tmp_counter2=" << tmp_counter2 << std::endl;

@@ -4,9 +4,7 @@ using BenchmarkTools
 # For Debugging
 include("../src/VRPTWinclude.jl")
 
-# Random.seed!(123132)
-
-
+Random.seed!(12323432)
 
 using Cxx, Libdl 
 const path_to_lib = pwd() 
@@ -87,8 +85,6 @@ dual_var_cpp[1] = 0.0
 
 # readline()
 
-
-
 function solomon_to_espprc(solomon::SolomonDataset, dual_var)
     nodes, fleet, requests = solomon.nodes, solomon.fleet, solomon.requests
     n_nodes = length(nodes)
@@ -158,6 +154,7 @@ end
 
 dual_var_pulse = [dual_var_org[2:end]; 0.0; 0.0]
 espprc = solomon_to_espprc(solomon, dual_var_pulse)
+
 @time sol = solveESPPRC(espprc, method="pulse")
 @show sol.cost
 @show sol.path
@@ -170,10 +167,9 @@ cpp_path = [espprc.origin; cpp_path[2:end-1]; espprc.destination]
 
 @test calculate_path_cost(cpp_path, espprc.cost) >= calculate_path_cost(sol.path, espprc.cost)
 if cpp_path != sol.path
-    @warn("Paths are different.")
+    @warn("Paths are different. But mine is better")
     @show cpp_path 
     @show sol.path 
 end
-
 
 println("Done")

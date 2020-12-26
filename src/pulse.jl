@@ -16,7 +16,6 @@
 # end
 
 
-
 function should_rollback(p::Label, pg::ESPPRC_Instance)
     # Section 4.3 Rollback Pruning
     if length(p.path) < 3
@@ -48,38 +47,42 @@ function should_rollback(p::Label, pg::ESPPRC_Instance)
     end
 end
 
-function time_to_time_value_index(t::Float64, btimes::Vector{Float64})
+function bounding_time_index(current_time::Float64, btimes::Vector{Float64})
     # time_values (sorted from greatest to smallest)
     Δ = btimes[1] - btimes[2] 
     time_ub = btimes[1]
-    k = Int(ceil((time_ub - t) / Δ)) + 1
-    k = max(k, 1)
+    k = Int(ceil((time_ub - current_time) / Δ)) + 1
+    if k <= length(btimes) 
+        @assert current_time >= btimes[k]
+    end
     return k
 end
 
-function isbounded(p::Label, primal_bounds::Vector{Label}, lower_bounds::Matrix{Label}, btimes::Vector{Float64}, pg::ESPPRC_Instance, bounding::Bool)
+
+function isbounded(p::Label, primal_bounds::Vector{Label}, lower_bounds::Matrix{Label}, btimes::Vector{Float64}, pg::ESPPRC_Instance, bounding::Bool; root=pg.origin)
     if isempty(primal_bounds) || isempty(primal_bounds)
         @warn("isempty primal_bounds or primal_bounds")
         return false
     end
     
     v_i = p.path[end]
-    upper_bound = primal_bounds[pg.origin].cost
-    min_lower_bound = minimum([lower_bounds[pg.origin, t].cost for t in 1:length(btimes)])
-    bound = bounding ? min_lower_bound : upper_bound
+    upper_bound = primal_bounds[root].cost
+    min_lower_bound = minimum([lower_bounds[root, t].cost for t in 1:length(btimes)])
 
+    bound = bounding ? min_lower_bound : upper_bound
 
     # must use from the bound matrix B the lower closest value to τ available. 
     # time_values (sorted from greatest to smallest)
     # τ <= p.time
-    k = time_to_time_value_index(p.time, btimes)
+    k = bounding_time_index(p.time, btimes)
     if k > length(btimes)
+        # In this case, p.time < btimes[end]; no lower_bounds info available.
         return false
     elseif lower_bounds[v_i, k].cost < Inf
         @assert btimes[k] <= p.time
         # The condition below should be strict inequality. 
-        # If it is set >=, then or-tools-example.jl could fail.
-        bounded = p.cost + lower_bounds[v_i, k].cost > bound
+        # If it is set >=, then some problems cannot be solved optimally.
+        bounded = p.cost + lower_bounds[v_i, k].cost > bound + eps
         return bounded
     else
         return false 
@@ -103,23 +106,17 @@ function bounding_scheme(btimes::Vector{Float64}, pg::ESPPRC_Instance)
         lower_bounds[i, k] = initialize_label(i, n_nodes; cost=Inf)
     end    
 
-    # We will change the origin of _pg 
-    
-    bound_order = [n_nodes-1; 1:n_nodes-2; n_nodes]
-
     bounding_iteration = 0
     for k in 1:length(btimes)
         cur_time = btimes[k]
 
-        for v_i in bound_order
+        for v_i in 1:n_nodes
             if v_i != pg.destination
-                _pg_ = deepcopy(pg) 
-                _pg_.origin = v_i
-
                 p = initialize_label(v_i, n_nodes)
                 if cur_time <= pg.late_time[v_i]
-                    p.time = max(cur_time, _pg_.early_time[v_i])
-                    pulse_procedure!(p, primal_bounds, lower_bounds, btimes, _pg_; init_time=cur_time, bounding=true)
+                    p.time = max(cur_time, pg.early_time[v_i])
+                    pulse_procedure!(p, primal_bounds, lower_bounds, btimes, pg; 
+                                        init_time=cur_time, bounding=true, root=v_i)
                 end
                 bounding_iteration += 1
             end
@@ -137,62 +134,61 @@ function bounding_scheme(btimes::Vector{Float64}, pg::ESPPRC_Instance)
 end # bounding_scheme
 
 
-function pulse_procedure!(p::Label, primal_bounds::Vector{Label}, lower_bounds::Matrix{Label}, btimes::Vector{Float64}, pg::ESPPRC_Instance; init_time=0.0, bounding=false)
-    global counter += 1
-
+function pulse_procedure!(p::Label, primal_bounds::Vector{Label}, lower_bounds::Matrix{Label}, btimes::Vector{Float64}, pg::ESPPRC_Instance; init_time=0.0, bounding=false, root=pg.origin)
     # current node
     v_i = p.path[end]
-    if p.time < pg.early_time[v_i]
-        p.time = pg.early_time[v_i]
-    end    
     if p.time > pg.late_time[v_i]
         return
     end
+    p.time = max(p.time, pg.early_time[v_i])
+    global counter += 1
 
-    if v_i == pg.destination
-        if p.cost < primal_bounds[pg.origin].cost 
-            primal_bounds[pg.origin] = deepcopy(p)
+    if v_i == pg.destination   # Arrived at the destination. Update the best bounds
+        if p.cost < primal_bounds[root].cost 
+            primal_bounds[root] = deepcopy(p)
         end
-        k = time_to_time_value_index(init_time, btimes)
-        if bounding && k <= length(btimes)
-            if p.cost < lower_bounds[pg.origin, k].cost 
-                if k == 1 || p.cost <= lower_bounds[pg.origin, k-1].cost 
-                    lower_bounds[pg.origin, k] = deepcopy(p)
+        if bounding
+            k = bounding_time_index(init_time, btimes)
+            if k <= length(btimes)
+                if p.cost < lower_bounds[root, k].cost - eps
+                    for kk in k:length(btimes)
+                        # lower_bounds[root, kk] = deepcopy(p)
+                        lower_bounds[root, kk].cost = p.cost
+                    end            
                 end
             end
         end
         return    
-        
-    else # If it didn't arrive at the destination yet 
-        if isbounded(p, primal_bounds, lower_bounds, btimes, pg, bounding) 
-            return         
-        end
-        if should_rollback(p, pg) 
-            return
-        end
-
-        # Create a new pulse 
-        for v_j in pg.forward_star[v_i]
-            if p.flag[v_j] == 0 
-                isreachable, new_time, new_load = forward_reach(p, v_i, v_j, pg)
-                if isreachable 
-                    pp = deepcopy(p)
-                    push!(pp.path, v_j)
-                    pp.cost += pg.cost[v_i, v_j]
-                    pp.load = new_load 
-                    pp.time = new_time 
-                    pp.flag[v_j] = 1 
-                    pulse_procedure!(pp, primal_bounds, lower_bounds, btimes, pg; init_time=init_time, bounding=bounding)
-                end
-            end
-        end
-                
     end
 
+    # If it didn't arrive at the destination yet 
+    if isbounded(p, primal_bounds, lower_bounds, btimes, pg, bounding, root=root) 
+        return         
+    end
+    if should_rollback(p, pg) 
+        return
+    end
+
+    # Create a new pulse 
+    for v_j in pg.forward_star[v_i]
+        if p.flag[v_j] == 0 
+            isreachable, new_time, new_load = forward_reach(p, v_i, v_j, pg)
+            if isreachable 
+                pp = deepcopy(p)
+                push!(pp.path, v_j)
+                pp.cost += pg.cost[v_i, v_j]
+                pp.load = new_load 
+                pp.time = new_time 
+                pp.flag[v_j] = 1 
+                pulse_procedure!(pp, primal_bounds, lower_bounds, btimes, pg; 
+                            init_time=init_time, bounding=bounding, root=root)
+            end
+        end
+    end
+    
+    return 
 end
 
-
-global counter = 0 
 
 function solveESPPRCpulse(org_pg::ESPPRC_Instance; step=10, max_neg_cost_routes=Inf)
     pg = deepcopy(org_pg)
@@ -203,6 +199,8 @@ function solveESPPRCpulse(org_pg::ESPPRC_Instance; step=10, max_neg_cost_routes=
     # Discrete Time Steps for Bounding
     time_ub = calculate_max_T(pg)
     time_lb = 0.1 * time_ub
+    step = Int(floor(time_ub*0.9 / 10)) + 1    
+    @show step
     btimes = collect(time_ub-step : -step : time_lb)
 
     # Bounding Scheme 
