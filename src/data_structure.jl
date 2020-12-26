@@ -49,6 +49,10 @@ mutable struct ESPPRC_Instance
     early_time  :: Vector{Float64}
     late_time   :: Vector{Float64}
     service_time:: Vector{Float64}
+    info        :: Dict{Any, Any}
+end
+function ESPPRC_Instance(origin, destination, capacity, cost, time, load, early_time, late_time, service_time)
+    return ESPPRC_Instance(origin, destination, capacity, cost, time, load, early_time, late_time, service_time, Dict())
 end
 ################################################
 

@@ -3,30 +3,12 @@
 
 # branch and bound
 
-function is_binary(y)
-    tol = 1e-6
-    for i in eachindex(y)
-        if ! ( isapprox(y[i], 1.0, atol=tol) || isapprox(y[i], 0.0, atol=tol) )
-            return false
-        end
-    end
-    return true
-end
-
-function route_cost(new_route, travel_time)
-    r_cost = 0.0
-    for i in 1:length(new_route)-1
-        r_cost += travel_time[new_route[i], new_route[i+1]]
-    end
-    return r_cost
-end
-
 
 function remove_arc_in_routes!(routes, travel_time)
     routes_to_be_removed = []
     for r_idx in eachindex(routes)
         r = routes[r_idx]
-        if route_cost(r, travel_time) == Inf 
+        if calculate_path_cost(r, travel_time) == Inf 
             push!(routes_to_be_removed, r_idx)
         end
     end

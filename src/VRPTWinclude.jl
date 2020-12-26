@@ -3,7 +3,10 @@ using JuMP, GLPK
 using ElasticArrays
 using DataStructures
 
+global counter = 0
+
 include("data_structure.jl")
+include("utils.jl")
 include("solomon.jl")
 include("ESPPRC.jl")
 include("pulse.jl")
