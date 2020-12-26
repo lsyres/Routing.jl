@@ -203,7 +203,6 @@ function solveESPPRCpulse(org_pg::ESPPRC_Instance; step=10, max_neg_cost_routes=
     # Discrete Time Steps for Bounding
     time_ub = calculate_max_T(pg)
     time_lb = 0.1 * time_ub
-    step = 200
     btimes = collect(time_ub-step : -step : time_lb)
 
     # Bounding Scheme 

@@ -59,7 +59,6 @@ function solveESPPRC_cpp(solomon, dual_var)
     dest = n_nodes - 1
     ut = matrix_data[1][5]
     lt = 0.1 * ut
-    step = 200
     # step = Int(round((ut - lt) / 15))
 
     max_capacity = solomon.fleet.capacity
