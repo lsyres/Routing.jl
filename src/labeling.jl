@@ -24,11 +24,11 @@ function dominate(label::Label, other_label::Label, pg::ESPPRC_Instance)
     # Check if label dominates other_label 
     # CN = [26, 17, 5, 19, 1, 14, 7, 2, 12, 3, 21, 27]
 
-    if label.cost > other_label.cost
+    if label.cost > other_label.cost + EPS
         return false
-    elseif label.time > other_label.time
+    elseif label.time > other_label.time + EPS
         return false
-    elseif label.load > other_label.load 
+    elseif label.load > other_label.load + EPS
         return false
     # elseif any(label.flag[CN] .> other_label.flag[CN])
     #     return false
