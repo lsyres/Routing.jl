@@ -36,9 +36,9 @@ function bounding_time_index(current_time::Float64, btimes::Vector{Float64})
     Δ = btimes[1] - btimes[2] 
     time_ub = btimes[1]
     k = Int(ceil((time_ub - current_time) / Δ)) + 1
-    if k <= length(btimes) 
-        @assert current_time >= btimes[k] - EPS
-    end
+    # if k <= length(btimes) 
+    #     @assert current_time >= btimes[k]
+    # end
     return k
 end
 
@@ -60,10 +60,10 @@ function isbounded(p::Label, primal_bounds::Vector{Label}, lower_bounds::Matrix{
         # In this case, p.time < btimes[end]; no lower_bounds info available.
         return false
     elseif lower_bounds[v_i, k] < Inf
-        @assert btimes[k] <= p.time + EPS
+        # @assert btimes[k] <= p.time
         # The condition below should be strict inequality. 
         # If it is set >=, then some problems cannot be solved optimally.
-        bounded = p.cost + lower_bounds[v_i, k] > bound + EPS
+        bounded = p.cost + lower_bounds[v_i, k] > bound
         return bounded
     else
         return false 
@@ -136,7 +136,7 @@ function pulse_procedure!(p::Label, primal_bounds::Vector{Label}, lower_bounds::
         if bounding
             k = bounding_time_index(init_time, btimes)
             if k <= length(btimes)
-                if p.cost < lower_bounds[root, k] - EPS
+                if p.cost < lower_bounds[root, k]
                     for kk in k:length(btimes)
                         # lower_bounds[root, kk] = deepcopy(p)
                         lower_bounds[root, kk] = p.cost

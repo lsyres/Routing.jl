@@ -82,13 +82,13 @@ end
 function forward_reach(λ_i::Label, v_i::Int, v_j::Int, pg::ESPPRC_Instance)
     # Check time 
     arrival_time = max( λ_i.time + pg.service_time[v_i] + pg.time[v_i, v_j] , pg.early_time[v_j] )
-    if arrival_time > pg.late_time[v_j] - EPS
+    if arrival_time > pg.late_time[v_j]
         return false, nothing, nothing
     end
 
     # Check capacity
     new_load = λ_i.load + pg.load[v_i, v_j]
-    if new_load > pg.capacity - EPS
+    if new_load > pg.capacity
         return false, nothing, nothing
     end
 
@@ -105,13 +105,13 @@ function backward_reach(λ_i::Label, v_i::Int, v_k::Int, pg::ESPPRC_Instance)
     # Check time 
     max_T = pg.info["max_T"]
     min_time_required = max(pg.time[v_k, v_i] + pg.service_time[v_i] + λ_i.time, max_T - b_bw_k)
-    if min_time_required > max_T - a_bw_k - EPS
+    if min_time_required > max_T - a_bw_k
         return false, nothing, nothing
     end
 
     # Check capacity
     new_load = λ_i.load + pg.load[v_k, v_i]
-    if new_load > pg.capacity - EPS
+    if new_load > pg.capacity
         return false, nothing, nothing
     end
 
@@ -169,4 +169,62 @@ function is_binary(y::Vector{Float64})
         end
     end
     return true
+end
+
+function deci3(n::Float64)
+    return round(n, digits=3)
+end
+function deci1(n::Float64)
+    return round(n, digits=1)
+end
+
+
+
+
+function show_details(path, pg::ESPPRC_Instance)
+    println("--------------Path Details ----------------------")
+    println(path)
+    if length(path) == 0
+        return 
+    end
+    
+    j = path[1]
+    arr_time = 0.0
+    load = 0.0
+    cost = 0.0
+    cost_change = 0.0
+    println("At node $j: time=$(deci3(arr_time)), load=$(deci1(load)), cost=$(deci3(cost))")
+    for k in 2:length(path)
+        i, j = path[k-1], path[k]
+        arr_time = max(arr_time + pg.service_time[i] + pg.time[i,j], pg.early_time[j]) |> deci3
+        load += pg.load[i,j] |> deci1
+        cost += pg.cost[i,j] |> deci3
+        println("At node $j: time=$(deci3(arr_time)), load=$(deci1(load)), cost=$(deci3(cost))")
+        if arr_time > pg.late_time[j]
+            @info("Time window constraint is violated at node $j: $(arr_time) > $(pg.late_time[j])")
+        end
+        if load > pg.capacity
+            @info("Capacity constraint is violated at node $j: $(load) > $(pg.capacity)")
+        end
+    end      
+    println("-"^50)  
+end
+
+
+function print_pct_neg_arcs(pg::ESPPRC_Instance) 
+    count = 0
+    neg = 0 
+    n_nodes = length(pg.service_time)
+    for i in 1:n_nodes 
+        for j in 1:n_nodes
+            if i != j && pg.cost[i,j] < Inf && i!=pg.origin
+                count += 1
+                if pg.cost[i,j] < 0.0 
+                    neg += 1
+                end
+            end
+        end
+    end
+
+    println("% neg arcs : ", round(neg/count * 100, digits=2), " %")
 end

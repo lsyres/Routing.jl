@@ -22,18 +22,20 @@ end
                     
 function dominate(label::Label, other_label::Label, pg::ESPPRC_Instance)
     # Check if label dominates other_label 
-    # CN = [26, 17, 5, 19, 1, 14, 7, 2, 12, 3, 21, 27]
+    CN = collect(pg.info["critical_nodes"])
 
-    if label.cost > other_label.cost + EPS
+    if label.cost > other_label.cost
         return false
-    elseif label.time > other_label.time + EPS
+    elseif label.time > other_label.time
         return false
-    elseif label.load > other_label.load + EPS
+    elseif label.load > other_label.load
         return false
+    # elseif sum(label.flag[CN]) > sum(label.flag[CN])
+    # elseif all(label.flag[CN] .>= other_label.flag[CN])
     # elseif any(label.flag[CN] .> other_label.flag[CN])
-    #     return false
-    else
-        for i in pg.info["critical_nodes"]
+        # return false
+    else 
+        for i in CN
             if label.flag[i] > other_label.flag[i]
                 return false 
             end 
@@ -330,7 +332,7 @@ function monodirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=MAX_INT::I
     if DSSR
         pg.info["critical_nodes"] = Set(Int[])
     else
-        pg.info["critical_nodes"] = Set(collect(set_N))
+        pg.info["critical_nodes"] = Set(set_N)
     end
 
     neg_cost_routes = Label[]
@@ -499,6 +501,3 @@ function bidirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=MAX_INT::Int
 
 end
 
-function deci3(n::Float64)
-    return round(1000*n)/1000
-end

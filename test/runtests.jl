@@ -5,7 +5,13 @@ include("debugging.jl")
 
 test_start_time = time()
 
+
+include("espprc_example.jl")
+
 @testset "VRPTW" begin
+
+    include("vrptw_example.jl")
+
     @testset "Solomon Instance Test" begin
         solomon_dataset = Dict(
             "C101_025" => 191.30,
@@ -28,9 +34,6 @@ test_start_time = time()
             end
         end
     end
-
-    include("vrptw_example.jl")
-    include("espprc_example.jl")
 
 end
 
