@@ -98,6 +98,7 @@ function EFF!(Λ::Vector{Vector{Label}}, label::Label, v_j::Int, pg::ESPPRC_Inst
 
     if is_non_dominated
         push!(Λ[v_j], label)
+        global counter += 1
         is_updated = true
     end
 
@@ -109,7 +110,7 @@ function predecessors(v_i::Int, pg::ESPPRC_Instance)
     if v_i == pg.origin
         return Int[]
     else
-        pg.reverse_star[v_i]
+        return pg.reverse_star[v_i]
     end
 end
 
@@ -157,7 +158,7 @@ function backward_extend(λ_i::Label, v_i::Int, v_k::Int, pg::ESPPRC_Instance)
 end
 
 
-function prepare_return_values!(labels::Vector{Label}, max_neg_cost_routes)
+function prepare_return_values!(labels::Vector{Label}, max_neg_cost_routes::Int)
     if isempty(labels)
         return Label(0, 0, [], Inf, []), []
     else
@@ -219,13 +220,14 @@ function forward_search!(v_i::Int, Λ_fw::Vector{Vector{Label}}, set_E::Vector{I
     max_T = pg.info["max_T"] :: Float64
     # Forward Extension            
     for λ_i in Λ_fw[v_i]
-        if λ_i.time <= max_T / 2
+        if λ_i.time <= (1/2) * max_T 
             for v_j in successors(v_i, pg)
                 if λ_i.flag[v_j] == 0 || !in(v_j, pg.info["critical_nodes"])
                     label = forward_extend(λ_i, v_i, v_j, pg)
                     if !isnothing(label)
                         is_updated = EFF!(Λ_fw, label, v_j, pg)
                         if is_updated
+                            global counter1 += 1
                             push!(set_E, v_j)                            
                         end    
                         if v_j == pg.destination && label.cost < 0.0
@@ -241,13 +243,14 @@ end
 function backward_search!(v_i::Int, Λ_bw::Vector{Vector{Label}}, set_E::Vector{Int}, pg::ESPPRC_Instance)
     max_T = pg.info["max_T"] :: Float64
     for λ_i in Λ_bw[v_i]
-        if λ_i.time <= max_T / 2
+        if λ_i.time <= (1/2) * max_T
             for v_k in predecessors(v_i, pg)
                 if λ_i.flag[v_k] == 0 || !in(v_k, pg.info["critical_nodes"])
                     label = backward_extend(λ_i, v_i, v_k, pg)
                     if !isnothing(label)
                         is_updated = EFF!(Λ_bw, label, v_k, pg)
                         if is_updated
+                            global counter2 += 1
                             push!(set_E, v_k)
                         end    
                     end
@@ -325,9 +328,9 @@ function monodirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=MAX_INT::I
     set_N = 1:n_nodes
     pg.info["max_T"] = Inf
     if DSSR
-        pg.info["critical_nodes"] = Int[]
+        pg.info["critical_nodes"] = Set(Int[])
     else
-        pg.info["critical_nodes"] = collect(set_N)
+        pg.info["critical_nodes"] = Set(collect(set_N))
     end
 
     neg_cost_routes = Label[]
@@ -336,6 +339,7 @@ function monodirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=MAX_INT::I
     best_label = nothing
     has_cycle = true 
     CN_iter = 1
+    global counter = 0
 
     # Search
     while has_cycle
@@ -370,6 +374,14 @@ function monodirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=MAX_INT::I
         if isempty(cycle_nodes)
             has_cycle = false
             final_labels = Λ_fw[pg.destination]    
+
+            @show counter
+            @show length(final_labels)
+            total_labels = 0 
+            for L in Λ_fw 
+                total_labels += length(L)
+            end
+            @show total_labels            
         else
             @show cycle_nodes
             union!(pg.info["critical_nodes"], cycle_nodes)    
@@ -379,12 +391,14 @@ function monodirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=MAX_INT::I
     # @show size(final_labels)
 
     # @show CN_iter
-    
+
+
+
     return prepare_return_values!(final_labels, max_neg_cost_routes)
 
 end
 
-function bidirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf, DSSR=false)
+function bidirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=MAX_INT::Int, DSSR=false)
     # Righini, G., Salani, M., 2006. Symmetry helps: Bounded bi-directional dynamic programming for the elementary shortest path problem with resource constraints. Discrete Optimization 3, 255–273. https://doi.org/10.1016/j.disopt.2006.05.007
 
     pg = deepcopy(org_pg)
@@ -394,15 +408,18 @@ function bidirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf, DSSR=fa
     set_N = 1:n_nodes
     pg.info["max_T"] = calculate_max_T(pg)
     if DSSR
-        pg.info["critical_nodes"] = Int[]
+        pg.info["critical_nodes"] = Set(Int[])
     else
-        pg.info["critical_nodes"] = collect(set_N)
+        pg.info["critical_nodes"] = Set(collect(set_N))
     end
 
     final_labels = Label[]
     best_label = nothing
     has_cycle = true 
     CN_iter = 0
+    global counter = 0
+    global counter1 = 0
+    global counter2 = 0
 
     # Search
     while has_cycle
@@ -437,17 +454,38 @@ function bidirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf, DSSR=fa
         while !isempty(set_E)
             # v_i = set_E[1]
             v_i = select_node!(set_E, pg)
+            tmp = time()
             forward_search!(v_i, Λ_fw, set_E, Label[], pg)
+            forward_cpu_time += time() - tmp 
+
+            tmp = time()
             backward_search!(v_i, Λ_bw, set_E, pg)
+            backward_cpu_time += time() - tmp
+
             setdiff!(set_E, v_i)
         end
 
+        join_cpu_time = time()
         final_labels, count_fw_labels, count_bw_labels = join_label_sets(Λ_fw, Λ_bw, pg)
+        join_cpu_time = time() - join_cpu_time
+        # @show deci3.([forward_cpu_time, backward_cpu_time, join_cpu_time])
 
         best_label = find_best_label!(final_labels)
         cycle_nodes = find_cycle_nodes(best_label.path, n_nodes)
         if isempty(cycle_nodes)
             has_cycle = false
+
+            @show counter, counter1, counter2
+            @show length(final_labels)
+            total_labels = 0 
+            for L in Λ_fw 
+                total_labels += length(L)
+            end
+            for L in Λ_bw 
+                total_labels += length(L)
+            end
+            @show total_labels
+
         else
             union!(pg.info["critical_nodes"], cycle_nodes)   
             CN_iter += 1         
@@ -459,4 +497,8 @@ function bidirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf, DSSR=fa
     # @show count_fw_labels, count_bw_labels, size(final_labels)
     return prepare_return_values!(final_labels, max_neg_cost_routes)
 
+end
+
+function deci3(n::Float64)
+    return round(1000*n)/1000
 end

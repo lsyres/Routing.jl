@@ -4,6 +4,8 @@ using ElasticArrays
 using DataStructures
 
 global counter = 0
+global counter1 = 0
+global counter2 = 0
 const EPS = 1e-9
 const MAX_INT = 2000000000
 

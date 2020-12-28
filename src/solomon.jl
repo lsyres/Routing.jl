@@ -167,7 +167,7 @@ function solomon_to_espprc(solomon::SolomonDataset, dual_var)
     origin = depot0
     destination = depot_dummy
     capacity = fleet.capacity
-
+    dual_var = [dual_var; 0.0; 0.0]
     # alpha = rand(0:20, n_nodes) * 2
     # cost_mtx = t - repeat(alpha, 1, n_nodes)
     # cost_mtx = t .* (rand(size(t)...) .- 0.25)

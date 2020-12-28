@@ -152,7 +152,7 @@ end
 
 function find_best_label!(labels::Vector{Label})
     if isempty(labels)
-        return Label(0, 0, [], Inf, []), []
+        return Label(0, 0, [], Inf, [])
     else
         sort!(labels, by=x->x.cost)
         best_label = labels[1]
