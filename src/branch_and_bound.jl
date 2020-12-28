@@ -255,10 +255,8 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance; tw_reduce=true, pricing_method="pu
     @info("Solving the root LP relaxation with column generation...")
     root_y, root_routes, root_obj = solve_cg_rmp(vrptw, initial_routes=[], tw_reduce=false, pricing_method=pricing_method)
     println("Root node solved. Cumulative Time: ", time() - start_time)
-    @show length(root_routes)
 
     @info("Root LP relaxation solution:")
-    @show root_obj
     show_current(root_y, root_routes)
     println("Is the root solution binary? ", is_binary(root_y))
 

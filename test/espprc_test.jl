@@ -2,8 +2,8 @@
 # The example given by Google OR-Tools https://developers.google.com/optimization/routing/vrp
 # Modified
 
-# using VRPTW
-include("../src/VRPTWinclude.jl")
+using VRPTW
+# include("../src/VRPTWinclude.jl")
 using Test 
 
 # For testing purpose

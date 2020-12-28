@@ -32,17 +32,15 @@ function plot_solomon_solution(solomon::SolomonDataset, sol_routes, sol_obj, dur
     close(fig)
 end
 
-
-
 # solomon_vrptw = generate_solomon_vrptw_instance("RC102_025")
 
-solomon_dataset_name = "C103_050"
+solomon_dataset_name = "R102_025"
 
 solomon = load_solomon(solomon_dataset_name)
 vrptw = generate_solomon_vrptw_instance(solomon)
 
 start_time = time()
-@time routes, obj_val = solve_vrp_bnb(vrptw, pricing_method="monodirectional");
+@time routes, obj_val = solve_vrp_bnb(vrptw, pricing_method="pulse");
 end_time = time()
 duration = end_time - start_time
 

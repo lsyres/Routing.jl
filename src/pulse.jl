@@ -37,7 +37,7 @@ function bounding_time_index(current_time::Float64, btimes::Vector{Float64})
     time_ub = btimes[1]
     k = Int(ceil((time_ub - current_time) / Δ)) + 1
     if k <= length(btimes) 
-        @assert current_time >= btimes[k]
+        @assert current_time >= btimes[k] - EPS
     end
     return k
 end
@@ -60,10 +60,10 @@ function isbounded(p::Label, primal_bounds::Vector{Label}, lower_bounds::Matrix{
         # In this case, p.time < btimes[end]; no lower_bounds info available.
         return false
     elseif lower_bounds[v_i, k] < Inf
-        @assert btimes[k] <= p.time
+        @assert btimes[k] <= p.time + EPS
         # The condition below should be strict inequality. 
         # If it is set >=, then some problems cannot be solved optimally.
-        bounded = p.cost + lower_bounds[v_i, k] > bound + eps
+        bounded = p.cost + lower_bounds[v_i, k] > bound + EPS
         return bounded
     else
         return false 
@@ -110,7 +110,7 @@ function bounding_scheme!(btimes::Vector{Float64}, neg_cost_routes::Vector{Label
     #     @show k, i, btimes[k], lower_bounds[i, k].cost
     # end    
 
-    @show bounding_iteration
+    # @show bounding_iteration
 
     return primal_bounds, lower_bounds
 end # bounding_scheme
@@ -136,7 +136,7 @@ function pulse_procedure!(p::Label, primal_bounds::Vector{Label}, lower_bounds::
         if bounding
             k = bounding_time_index(init_time, btimes)
             if k <= length(btimes)
-                if p.cost < lower_bounds[root, k] - eps
+                if p.cost < lower_bounds[root, k] - EPS
                     for kk in k:length(btimes)
                         # lower_bounds[root, kk] = deepcopy(p)
                         lower_bounds[root, kk] = p.cost
@@ -203,7 +203,7 @@ function solveESPPRCpulse(org_pg::ESPPRC_Instance; step=-1, max_neg_cost_routes=
     pulse_procedure!(p, primal_bounds, lower_bounds, btimes, neg_cost_routes, pg)
 
     if max_neg_cost_routes < MAX_INT
-        return primal_bounds[pg.origin], neg_cost_routes
+        return find_best_label!(neg_cost_routes), neg_cost_routes
     else
         return primal_bounds[pg.origin]
     end

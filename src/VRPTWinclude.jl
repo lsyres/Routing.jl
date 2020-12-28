@@ -4,7 +4,7 @@ using ElasticArrays
 using DataStructures
 
 global counter = 0
-const eps = 1e-6
+const EPS = 1e-9
 const MAX_INT = 2000000000
 
 include("data_structure.jl")

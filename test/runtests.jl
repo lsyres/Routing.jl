@@ -1,6 +1,7 @@
 using VRPTW
 using Test
 
+include("debugging.jl")
 
 test_start_time = time()
 

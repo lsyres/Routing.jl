@@ -156,10 +156,6 @@ function backward_extend(λ_i::Label, v_i::Int, v_k::Int, pg::ESPPRC_Instance)
     return label
 end
 
-function find_best_label!(labels)
-    sort!(labels, by=x->x.cost)
-    best_label = labels[1]
-end
 
 function prepare_return_values!(labels::Vector{Label}, max_neg_cost_routes)
     if isempty(labels)

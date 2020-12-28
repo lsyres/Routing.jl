@@ -191,9 +191,11 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-
         )
 
         t1 = time()
-        best_p, all_negative_reduced_cost_paths = solveESPPRC(pg, max_neg_cost_routes=400, method=pricing_method)
+        # best_p, all_negative_reduced_cost_paths = solveESPPRC(pg, max_neg_cost_routes=10000, method=pricing_method)
+        best_p, all_negative_reduced_cost_paths = solveESPPRC(pg, max_neg_cost_routes=10000, method="pulse")
+        # best_p, all_negative_reduced_cost_paths = solveESPPRC(pg, max_neg_cost_routes=400, method="monodirectional")
+        
         t2 = time()
-
 
         if iter == 1 || iter % 10 == 0 || abs(best_p.cost) < 1e-6
             pricing_time = string(round((t2-t1)*1000)/1000) * " s" 
@@ -205,14 +207,7 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-
 
         added_path_counter = 0
 
-        if best_p.path == [] || best_p.cost == Inf
-            println("--- There is no feasible path. ---")
-            # @show dp_state.path, dp_state.cost
-            sol_y = [] 
-            sol_routes = []
-            sol_obj = Inf
-            break
-        elseif !isempty(all_negative_reduced_cost_paths)
+        if !isempty(all_negative_reduced_cost_paths)
             is_new_route_generated = false
             for neg_p in all_negative_reduced_cost_paths
                 if ! in(neg_p.path, routes) 
@@ -233,6 +228,13 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-
                 break
             end
             
+        elseif best_p.path == [] || best_p.cost == Inf
+            println("--- There is no feasible path. ---")
+            # @show dp_state.path, dp_state.cost
+            sol_y = [] 
+            sol_routes = []
+            sol_obj = Inf
+            break
         else
             sol_routes = routes
             # If pulse limits the number of negative reduced cost paths
@@ -245,7 +247,7 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-
 
 
     println("-- Total columns = $(length(sol_routes))")
-    sol_y = Array(sol_y)
+    sol_y = Array{Float64}(sol_y)
 
     return sol_y, sol_routes, sol_obj
 

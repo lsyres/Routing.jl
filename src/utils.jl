@@ -150,6 +150,12 @@ function calculate_path_cost(new_route::Vector{Int}, cost_mtx::Matrix{Float64})
 end
 
 
+function find_best_label!(labels::Vector{Label})
+    sort!(labels, by=x->x.cost)
+    best_label = labels[1]
+end
+
+
 function is_binary(y::Vector{Float64})
     tol = 1e-6
     for i in eachindex(y)
