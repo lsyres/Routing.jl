@@ -8,6 +8,18 @@ function save_forward_star(pg::ESPPRC_Instance; sorted=true)
     n_nodes = length(pg.service_time)
     return save_forward_star(n_nodes, pg.cost; sorted=sorted)
 end
+
+function save_forward_star!(pg::ESPPRC_Instance; sorted=true)
+    n_nodes = length(pg.service_time)
+    for v_i in 1:n_nodes
+        forward_star = findall(x -> x < Inf, pg.cost[v_i, :])
+        if sorted 
+            sort!(forward_star, by= x->pg.cost[v_i, x])
+        end
+        pg.forward_star[v_i] = forward_star 
+    end     
+end
+
 function save_forward_star(n_nodes, cost; sorted=true)
     fs = Vector{Vector{Int}}(undef, n_nodes)
     for v_i in 1:n_nodes
@@ -19,48 +31,16 @@ function save_forward_star(n_nodes, cost; sorted=true)
     end
     return fs 
 end
-function save_forward_star!(pg::ESPPRC_Instance; sorted=true)
-    n_nodes = length(pg.service_time)
-    for v_i in 1:n_nodes
-        forward_star = findall(x -> x < Inf, pg.cost[v_i, :])
-        if sorted 
-            sort!(forward_star, by= x->pg.cost[v_i, x])
-        end
-        pg.forward_star[v_i] = forward_star 
-    end
-end
-
-function save_reverse_star(pg::ESPPRC_Instance; sorted=true)
-    n_nodes = length(pg.service_time)
-    return save_reverse_star(n_nodes, pg.cost; sorted=sorted)
-end
-function save_reverse_star(n_nodes, cost; sorted=true)
-    rs = Vector{Vector{Int}}(undef, n_nodes)
-    for v_i in 1:n_nodes
-        reverse_star = findall(x -> x < Inf, cost[:, v_i])
-        if sorted 
-            sort!(reverse_star, by= x->cost[x, v_i])
-        end
-        rs[v_i] = reverse_star 
-    end
-    return rs
-end
-function save_reverse_star!(pg::ESPPRC_Instance; sorted=true)
-    n_nodes = length(pg.service_time)
-    for v_i in 1:n_nodes
-        reverse_star = findall(x -> x < Inf, pg.cost[:, v_i])
-        if sorted 
-            sort!(reverse_star, by= x->pg.cost[x, v_i])
-        end
-        pg.reverse_star[v_i] = reverse_star 
-    end
-end
 
 function graph_reduction!(pg::ESPPRC_Instance)
     n_nodes = length(pg.early_time)
     OD = [pg.origin, pg.destination]
 
     pg.cost[pg.origin, pg.destination] = Inf
+
+    for i in 1:n_nodes
+        @show i, pg.forward_star[i]
+    end
 
     for j in 1:n_nodes
         pg.cost[j, j] = Inf
@@ -73,9 +53,10 @@ function graph_reduction!(pg::ESPPRC_Instance)
         end
     end
 
-    # Inclusion of updating fs leads to increased iterations. Don't know why.
-    # save_forward_star!(pg)
-    # save_reverse_star!(pg)
+    # save_forward_star!(pg, sorted=true)
+    for i in 1:n_nodes
+        @show i, pg.forward_star[i]
+    end
 end
 
 

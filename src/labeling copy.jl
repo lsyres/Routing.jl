@@ -24,16 +24,15 @@ function dominate(label::Label, other_label::Label, pg::ESPPRC_Instance)
     # Check if label dominates other_label 
     # CN = [26, 17, 5, 19, 1, 14, 7, 2, 12, 3, 21, 27]
 
+    CN = pg.info["critical_nodes"] :: Vector{Int}
     if label.cost > other_label.cost
         return false
     elseif label.time > other_label.time
         return false
     elseif label.load > other_label.load 
         return false
-    # elseif any(label.flag[CN] .> other_label.flag[CN])
-    #     return false
     else
-        for i in pg.info["critical_nodes"]
+        for i in 1:length(label.flag) 
             if label.flag[i] > other_label.flag[i]
                 return false 
             end 
@@ -41,14 +40,13 @@ function dominate(label::Label, other_label::Label, pg::ESPPRC_Instance)
     end
 
     return true
-
 end
 
 function update_flag!(label::Label, pg::ESPPRC_Instance; direction="backward")    
     if direction=="forward"
         v_j = label.path[end]
         label.flag[v_j] = 1
-        for v_k in successors(v_j, pg)
+        for v_k in pg.forward_star[v_j]
             if label.flag[v_k] == 0
                 is_reachable, _, _ = forward_reach(label, v_j, v_k, pg)
                 if !is_reachable
@@ -71,6 +69,10 @@ function update_flag!(label::Label, pg::ESPPRC_Instance; direction="backward")
         # do nothing
     end
 end
+
+
+global new_non_dominated_labels = 0
+global new_node_added_to_E = 0
 
 function EFF!(Λ::Vector{Vector{Label}}, label::Label, v_j::Int, pg::ESPPRC_Instance)
     is_updated = false
@@ -98,6 +100,8 @@ function EFF!(Λ::Vector{Vector{Label}}, label::Label, v_j::Int, pg::ESPPRC_Inst
 
     if is_non_dominated
         push!(Λ[v_j], label)
+        global new_non_dominated_labels += 1
+
         is_updated = true
     end
 
@@ -109,30 +113,43 @@ function predecessors(v_i::Int, pg::ESPPRC_Instance)
     if v_i == pg.origin
         return Int[]
     else
-        pg.reverse_star[v_i]
+        pred = findall(x -> x < Inf, view(pg.cost, :, v_i))
+        setdiff!(pred, [v_i])
+        # sort!(pred, by=x->pg.time[x, v_i])
+        return pred
     end
 end
 
-function successors(v_i::Int, pg::ESPPRC_Instance)
-    if v_i == pg.destination
-        return Int[]
-    else
-        return pg.forward_star[v_i]
-    end
-end
+# function successors(v_i::Int, pg::ESPPRC_Instance)
+#     if v_i == pg.destination
+#         return Int[]
+#     else
+#         succ = findall(x -> x < Inf, view(pg.cost, v_i, :))
+#         setdiff!(succ, [v_i])
+#         # sort!(succ, by=x->pg.time[v_i, x])
+#         return succ
+#     end
+# end
+
 
 function forward_extend(λ_i::Label, v_i::Int, v_j::Int, pg::ESPPRC_Instance)
     is_reachable, new_time, new_load = forward_reach(λ_i, v_i, v_j, pg)
 
     if !is_reachable
-        λ_i.flag[v_j] = 1
+        # λ_i.flag[v_j] = 1
         return nothing
     end
     new_cost = λ_i.cost + pg.cost[v_i, v_j]
     new_path = [λ_i.path; v_j]
 
     label = Label(new_time, new_load, copy(λ_i.flag), new_cost, new_path)
+    if new_time == 1001.7896999856963 && new_cost == -33.7881598672754
+        @show label.flag
+    end
     update_flag!(label, pg, direction="forward")
+    if new_time == 1001.7896999856963 && new_cost == -33.7881598672754
+        @show label.flag
+    end
 
     return label
 end
@@ -144,7 +161,7 @@ function backward_extend(λ_i::Label, v_i::Int, v_k::Int, pg::ESPPRC_Instance)
     is_reachable, new_time, new_load = backward_reach(λ_i, v_i, v_k, pg)
 
     if !is_reachable
-        λ_i.flag[v_k] = 1
+        # λ_i.flag[v_j] = 1
         return nothing
     end
     new_cost = pg.cost[v_k, v_i] + λ_i.cost 
@@ -163,24 +180,24 @@ end
 
 function prepare_return_values!(labels::Vector{Label}, max_neg_cost_routes)
     if isempty(labels)
-        if max_neg_cost_routes < MAX_INT
+        if max_neg_cost_routes < Inf
             return Label(0, 0, [], Inf, []), []
         else
             return Label(0, 0, [], Inf, []) 
         end
     else
         best_label = find_best_label!(labels)
-        if max_neg_cost_routes < MAX_INT
+        if max_neg_cost_routes < Inf
             idx = findfirst(x -> x.cost >= 0.0, labels)
             if  idx == 1
-                neg_cost_routes = []
+                neg_cost_labels = []
             elseif isnothing(idx)
-                neg_cost_routes = labels
+                neg_cost_labels = labels
             else
                 idx = min(idx-1, max_neg_cost_routes)
-                neg_cost_routes = labels[1:idx]
+                neg_cost_labels = labels[1:idx]
             end
-            return best_label, neg_cost_routes
+            return best_label, neg_cost_labels
         else
             return best_label
         end
@@ -227,21 +244,23 @@ function select_node!(set_E::Vector{Int}, pg::ESPPRC_Instance)
     end
 end
 
-function forward_search!(v_i::Int, Λ_fw::Vector{Vector{Label}}, set_E::Vector{Int}, neg_cost_routes::Vector{Label}, pg::ESPPRC_Instance)
+function forward_search!(v_i::Int, Λ_fw::Vector{Vector{Label}}, set_E::Vector{Int}, neg_cost_labels::Vector{Label}, pg::ESPPRC_Instance)
     max_T = pg.info["max_T"] :: Float64
     # Forward Extension            
     for λ_i in Λ_fw[v_i]
         if λ_i.time <= max_T / 2
-            for v_j in successors(v_i, pg)
+            for v_j in pg.forward_star[v_i]
                 if λ_i.flag[v_j] == 0 || !in(v_j, pg.info["critical_nodes"])
                     label = forward_extend(λ_i, v_i, v_j, pg)
                     if !isnothing(label)
                         is_updated = EFF!(Λ_fw, label, v_j, pg)
                         if is_updated
-                            push!(set_E, v_j)                            
+                            push!(set_E, v_j)
+                            global new_node_added_to_E += 1
+                            
                         end    
                         if v_j == pg.destination && label.cost < 0.0
-                            push!(neg_cost_routes, label)
+                            push!(neg_cost_labels, label)
                         end                                                
                     end
                 end
@@ -253,9 +272,9 @@ end
 function backward_search!(v_i::Int, Λ_bw::Vector{Vector{Label}}, set_E::Vector{Int}, pg::ESPPRC_Instance)
     max_T = pg.info["max_T"] :: Float64
     for λ_i in Λ_bw[v_i]
-        if λ_i.time <= max_T / 2
+        if λ_i.time < max_T / 2
             for v_k in predecessors(v_i, pg)
-                if λ_i.flag[v_k] == 0 || !in(v_k, pg.info["critical_nodes"])
+                if λ_i.flag[v_k] == 0 
                     label = backward_extend(λ_i, v_i, v_k, pg)
                     if !isnothing(label)
                         is_updated = EFF!(Λ_bw, label, v_k, pg)
@@ -327,11 +346,11 @@ function find_cycle_nodes(path::Vector{Int}, n_nodes::Int)
     return cycle_nodes
 end
 
-function monodirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=MAX_INT::Int, DSSR=false)
+function monodirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf, DSSR=false)
     # Feillet, D., Dejax, P., Gendreau, M., Gueguen, C., 2004. An exact algorithm for the elementary shortest path problem with resource constraints: Application to some vehicle routing problems. Networks 44, 216–229. https://doi.org/10.1002/net.20033
+
     pg = deepcopy(org_pg)
     graph_reduction!(pg)
-    pg.info["max_neg_cost_routes"] = max_neg_cost_routes
 
     n_nodes = length(pg.early_time)
     set_N = 1:n_nodes
@@ -342,7 +361,8 @@ function monodirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=MAX_INT::I
         pg.info["critical_nodes"] = collect(set_N)
     end
 
-    neg_cost_routes = Label[]
+    neg_cost_labels = Label[]
+
 
     final_labels = Label[]
     best_label = nothing
@@ -369,9 +389,9 @@ function monodirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=MAX_INT::I
         while !isempty(set_E)
             # v_i = set_E[1]
             v_i = select_node!(set_E, pg) :: Int
-            forward_search!(v_i, Λ_fw, set_E, neg_cost_routes, pg)
+            forward_search!(v_i, Λ_fw, set_E, neg_cost_labels, pg)
 
-            if length(neg_cost_routes) >= max_neg_cost_routes
+            if length(neg_cost_labels) >= max_neg_cost_routes
                 break
             end
             setdiff!(set_E, v_i)
@@ -390,7 +410,10 @@ function monodirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=MAX_INT::I
     end
     # @show size(final_labels)
 
-    # @show CN_iter
+    @show new_non_dominated_labels
+    @show new_node_added_to_E
+
+    @show CN_iter
     
     return prepare_return_values!(final_labels, max_neg_cost_routes)
 
@@ -466,7 +489,7 @@ function bidirectional(org_pg::ESPPRC_Instance; max_neg_cost_routes=Inf, DSSR=fa
         end
     end
 
-    # @show CN_iter
+    @show CN_iter
 
     # @show count_fw_labels, count_bw_labels, size(final_labels)
     return prepare_return_values!(final_labels, max_neg_cost_routes)

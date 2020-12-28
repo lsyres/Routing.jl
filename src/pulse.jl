@@ -1,20 +1,4 @@
 # Leonardo Lozano, Daniel Duque, Andrés L. Medaglia (2016) An Exact Algorithm for the Elementary Shortest Path Problem with Resource Constraints. Transportation Science 50(1):348-357. https://doi.org/10.1287/trsc.2014.0582
-# Implemented by Changhyun Kwon chkwon@gmail.com
-
-
-# In the Pulse data structure,
-# cost, load, time have been updated for [path; next].
-# That is, path is updated by [path; next] later,
-# only after all feasbility & pruning checks.
-
-# mutable struct Label
-#     time        ::Float64
-#     load        ::Float64
-#     flag        ::Vector{Int}
-#     cost        ::Float64
-#     path        ::Vector{Int}
-# end
-
 
 function should_rollback(p::Label, pg::ESPPRC_Instance)
     # Section 4.3 Rollback Pruning
@@ -88,7 +72,7 @@ end
 
 
 
-function bounding_scheme(btimes::Vector{Float64}, pg::ESPPRC_Instance)
+function bounding_scheme!(btimes::Vector{Float64}, neg_cost_routes::Vector{Label}, pg::ESPPRC_Instance)
     n_nodes = length(pg.service_time)
     set_N = 1:n_nodes 
 
@@ -113,7 +97,7 @@ function bounding_scheme(btimes::Vector{Float64}, pg::ESPPRC_Instance)
                 p = initialize_label(v_i, n_nodes)
                 if cur_time <= pg.late_time[v_i]
                     p.time = max(cur_time, pg.early_time[v_i])
-                    pulse_procedure!(p, primal_bounds, lower_bounds, btimes, pg; 
+                    pulse_procedure!(p, primal_bounds, lower_bounds, btimes, neg_cost_routes, pg; 
                                         init_time=cur_time, bounding=true, root=v_i)
                 end
                 bounding_iteration += 1
@@ -132,7 +116,11 @@ function bounding_scheme(btimes::Vector{Float64}, pg::ESPPRC_Instance)
 end # bounding_scheme
 
 
-function pulse_procedure!(p::Label, primal_bounds::Vector{Label}, lower_bounds::Matrix{Float64}, btimes::Vector{Float64}, pg::ESPPRC_Instance; init_time=0.0, bounding=false, root=pg.origin)
+function pulse_procedure!(p::Label, primal_bounds::Vector{Label}, lower_bounds::Matrix{Float64}, btimes::Vector{Float64}, neg_cost_routes::Vector{Label}, pg::ESPPRC_Instance; init_time=0.0, bounding=false, root=pg.origin)
+    if length(neg_cost_routes) >= pg.info["max_neg_cost_routes"]
+        return
+    end
+
     # current node
     v_i = p.path[end]
     if p.time > pg.late_time[v_i]
@@ -156,6 +144,9 @@ function pulse_procedure!(p::Label, primal_bounds::Vector{Label}, lower_bounds::
                 end
             end
         end
+        if p.cost < 0
+            push!(neg_cost_routes, p)
+        end
         return    
     end
 
@@ -178,7 +169,7 @@ function pulse_procedure!(p::Label, primal_bounds::Vector{Label}, lower_bounds::
                 pp.load = new_load 
                 pp.time = new_time 
                 pp.flag[v_j] = 1 
-                pulse_procedure!(pp, primal_bounds, lower_bounds, btimes, pg; 
+                pulse_procedure!(pp, primal_bounds, lower_bounds, btimes, neg_cost_routes, pg; 
                             init_time=init_time, bounding=bounding, root=root)
             end
         end
@@ -187,10 +178,10 @@ function pulse_procedure!(p::Label, primal_bounds::Vector{Label}, lower_bounds::
     return 
 end
 
-
-function solveESPPRCpulse(org_pg::ESPPRC_Instance; step=-1, max_neg_cost_routes=Inf)
+function solveESPPRCpulse(org_pg::ESPPRC_Instance; step=-1, max_neg_cost_routes=MAX_INT::Int)
     pg = deepcopy(org_pg)
     graph_reduction!(pg)
+    pg.info["max_neg_cost_routes"] = max_neg_cost_routes
 
     n_nodes = length(pg.late_time)
 
@@ -200,31 +191,20 @@ function solveESPPRCpulse(org_pg::ESPPRC_Instance; step=-1, max_neg_cost_routes=
     if step == -1 
         step = Int(floor(time_ub*0.9 / 20)) + 1    
     end
-    step = 10
-    @show step
     btimes = collect(time_ub-step : -step : time_lb)
 
+    # Container for negative reduced cost solutions
+    neg_cost_routes = Vector{Label}(undef,0)
+
     # Bounding Scheme 
-    primal_bounds, lower_bounds = bounding_scheme(btimes, pg)
-
-    @show counter
-
-    # p = initialize_pulse(pg.origin)
-    # best_p = initialize_pulse(pg.origin; cost=Inf)
-
-    # neg_cost_sols = Vector{Pulse}(undef,0)
+    primal_bounds, lower_bounds = bounding_scheme!(btimes, neg_cost_routes, pg)
 
     p = initialize_label(pg.origin, n_nodes)
-    pulse_procedure!(p, primal_bounds, lower_bounds, btimes, pg)
-    @show counter
+    pulse_procedure!(p, primal_bounds, lower_bounds, btimes, neg_cost_routes, pg)
 
-    return primal_bounds[pg.origin]
-
-
-    # println("total pulse conter:" , counter) 
-    # if max_neg_cost_routes < Inf
-    #     return convert_to_label(best_p), convert_to_label.(neg_cost_sols)
-    # else
-    #     return convert_to_label(best_p)
-    # end
+    if max_neg_cost_routes < MAX_INT
+        return primal_bounds[pg.origin], neg_cost_routes
+    else
+        return primal_bounds[pg.origin]
+    end
 end
