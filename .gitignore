@@ -1,2 +1,9 @@
 /Manifest.toml
+.vscode
+.github
 *.dylib
+
+sandbox/play.jl
+
+*.png
+R102_025.png

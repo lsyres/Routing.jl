@@ -15,21 +15,6 @@ end
 ################################################
 # ESPPRC algorithm 
 ################################################
-mutable struct Pulse
-    path    :: Array{Int64, 1}
-    next    :: Int64
-    cost    :: Float64 
-    load    :: Float64
-    time    :: Float64
-end
-
-function Base.show(io::IO, p::Pulse)
-    println("Pulse -> path=$(p.path)")
-    println("         next=$(p.next)")
-    println("         cost=$(p.cost)")
-    println("         load=$(p.load)")
-    println("         time=$(p.time)")
-end
 
 mutable struct Label
     time        ::Float64
@@ -49,6 +34,15 @@ mutable struct ESPPRC_Instance
     early_time  :: Vector{Float64}
     late_time   :: Vector{Float64}
     service_time:: Vector{Float64}
+    forward_star:: Vector{Vector{Int}}
+    reverse_star:: Vector{Vector{Int}}
+    info        :: Dict{Any, Any}
+end
+function ESPPRC_Instance(origin, destination, capacity, cost, time, load, early_time, late_time, service_time)
+    n_nodes = length(service_time)
+    fs = save_forward_star(n_nodes, cost; sorted=true)
+    rs = save_reverse_star(n_nodes, cost; sorted=true)
+    return ESPPRC_Instance(origin, destination, capacity, cost, time, load, early_time, late_time, service_time, fs, rs, Dict())
 end
 ################################################
 

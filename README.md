@@ -153,6 +153,6 @@ This package implements the following algorithms:
   - Callable by `solveESPPRC(problem::ESPPRC_Instance, method="monodirectional")`
   - Currently, the reachability concept is not implemented.
 
-- A bidirectional dynamic programming method: [Righini, G., Salani, M., 2006. Symmetry helps: Bounded bi-directional dynamic programming for the elementary shortest path problem with resource constraints. Discrete Optimization 3, 255–273.](https://doi.org/10.1016/j.disopt.2006.05.007)
+- (work in progress, not working properly yet) A bidirectional dynamic programming method: [Righini, G., Salani, M., 2006. Symmetry helps: Bounded bi-directional dynamic programming for the elementary shortest path problem with resource constraints. Discrete Optimization 3, 255–273.](https://doi.org/10.1016/j.disopt.2006.05.007)
   - Callable by `solveESPPRC(problem::ESPPRC_Instance, method="bidirectional")`
 

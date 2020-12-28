@@ -23,7 +23,7 @@ function show_details(path, pg::ESPPRC_Instance)
         if arr_time > pg.late_time[j]
             @info("Time window constraint is violated at node $j: $(arr_time) > $(pg.late_time[j])")
         end
-        if load > capacity
+        if load > pg.capacity
             @info("Capacity constraint is violated at node $j: $(load) > $(pg.capacity)")
         end
     end      

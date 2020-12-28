@@ -3,30 +3,12 @@
 
 # branch and bound
 
-function is_binary(y)
-    tol = 1e-6
-    for i in eachindex(y)
-        if ! ( isapprox(y[i], 1.0, atol=tol) || isapprox(y[i], 0.0, atol=tol) )
-            return false
-        end
-    end
-    return true
-end
-
-function route_cost(new_route, travel_time)
-    r_cost = 0.0
-    for i in 1:length(new_route)-1
-        r_cost += travel_time[new_route[i], new_route[i+1]]
-    end
-    return r_cost
-end
-
 
 function remove_arc_in_routes!(routes, travel_time)
     routes_to_be_removed = []
     for r_idx in eachindex(routes)
         r = routes[r_idx]
-        if route_cost(r, travel_time) == Inf 
+        if calculate_path_cost(r, travel_time) == Inf 
             push!(routes_to_be_removed, r_idx)
         end
     end
@@ -122,7 +104,7 @@ function  branch_decision!(next_branches, best_sol, sol_y, sol_routes, sol_obj, 
     end
 end
 
-function solve_BnB!(best_sol::BestIncumbent, branches; pricing_method="monodirectional")
+function solve_BnB!(best_sol::BestIncumbent, branches; pricing_method="pulse")
     next_branches = Branch[]
 
     while !isempty(branches)
@@ -187,7 +169,7 @@ function generate_branch_priority(root_y, root_routes, vrptw)
     return sort(collect(branch_score_dict), by= x->x[2])
 end
 
-function initial_BnB!(best_sol, vrptw, root_y, root_routes, root_obj; pricing_method="monodirectional")
+function initial_BnB!(best_sol, vrptw, root_y, root_routes, root_obj; pricing_method="pulse")
     branch_priority = generate_branch_priority(root_y, root_routes, vrptw)
     new_vrptw = deepcopy(vrptw)
     history = OrderedDict()
@@ -227,7 +209,7 @@ function initial_BnB!(best_sol, vrptw, root_y, root_routes, root_obj; pricing_me
     
 end
 
-function complete_BnB!(best_sol, vrptw, root_y, root_routes, root_obj; pricing_method="monodirectional")
+function complete_BnB!(best_sol, vrptw, root_y, root_routes, root_obj; pricing_method="pulse")
     # Most Priority is at the end.
     branch_priority = generate_branch_priority(root_y, root_routes, vrptw)
 
@@ -255,7 +237,7 @@ function complete_BnB!(best_sol, vrptw, root_y, root_routes, root_obj; pricing_m
 
 end
 
-function solve_vrp_bnb(vrptw::VRPTW_Instance; tw_reduce=true, pricing_method="monodirectional")
+function solve_vrp_bnb(vrptw::VRPTW_Instance; tw_reduce=true, pricing_method="pulse")
     println("Pricing method = $pricing_method")
 
     start_time = time()
@@ -273,10 +255,8 @@ function solve_vrp_bnb(vrptw::VRPTW_Instance; tw_reduce=true, pricing_method="mo
     @info("Solving the root LP relaxation with column generation...")
     root_y, root_routes, root_obj = solve_cg_rmp(vrptw, initial_routes=[], tw_reduce=false, pricing_method=pricing_method)
     println("Root node solved. Cumulative Time: ", time() - start_time)
-    @show length(root_routes)
 
     @info("Root LP relaxation solution:")
-    @show root_obj
     show_current(root_y, root_routes)
     println("Is the root solution binary? ", is_binary(root_y))
 

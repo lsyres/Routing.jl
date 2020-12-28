@@ -3,24 +3,23 @@
 # Modified
 
 
-# Random.seed!(34534)
-# dataset_name = "C102_025"
+# Bug Instances
+# Random.seed!(23423); dataset_name = "C102_100"
+# Random.seed!(34534); dataset_name = "C102_025"
 
-# Random.seed!(23423)
-# dataset_name = "C102_100"
 
 
 # using VRPTW
 include("../src/VRPTWinclude.jl")
-include("espprc_test_functions.jl")
+include("debugging.jl")
 
 using Test 
 
 # For testing purpose
 using Random
-Random.seed!(23423); dataset_name = "C102_100"
-
-# Random.seed!(34534); dataset_name = "C102_025"
+# Random.seed!(23423); dataset_name = "C102_100"
+Random.seed!(34534); dataset_name = "C102_025"
+# dataset_name = "C101_050"
 
 data_file_path = dataset_name * ".xml"
 data_file_path = joinpath(@__DIR__, "..", "solomon-1987", data_file_path)
@@ -57,14 +56,24 @@ origin = depot0
 destination = depot_dummy
 capacity = fleet.capacity
 
-# alpha = rand(0:20, n_nodes)
-# cost_mtx = t - repeat(alpha, 1, n_nodes)
+# 
 cost_mtx = t .* (rand(size(t)...) .- 0.25)
-# cost_mtx = t
+
+
+# cost_mtx = copy(t)
+# alpha = rand(0:20, n_nodes)
+# alpha[origin] = 0
+# for i in N, j in N
+#     cost_mtx[i, j] -= alpha[i]
+# end
+# cost_mtx = round.(cost_mtx)
+# travel_time = round.(travel_time)
+
+
 
 resrc_mtx = zeros(n_nodes, n_nodes)
-for i in N, j in N 
-    if j in C
+for i in N, j in C 
+    if i != destination
         resrc_mtx[i, j] = requests[j].quantity
     end
 end
@@ -90,16 +99,20 @@ ei = ESPPRC_Instance(
 
 ############################################################
 
+
+using ProfileView
+
 @time sol = solveESPPRC(ei, method="pulse")
 # @time lab1 = solveESPPRC(ei, method="monodirectional")
-@time lab2 = solveESPPRC(ei, method="bidirectional")
-
+@time lab1 = solveESPPRC(ei, method="monodirectional", DSSR=true)
+@profview lab1 = solveESPPRC(ei, method="monodirectional", DSSR=true)
+# @time lab2 = solveESPPRC(ei, method="bidirectional")
 
 @show sol.cost, sol.load, sol.time
-# @show lab1.cost, lab1.load, lab1.time
+@show lab1.cost, lab1.load, lab1.time
 @show lab2.cost, lab2.load, lab2.time
 @show sol.path
-# @show lab1.path
+@show lab1.path
 @show lab2.path
 
 println("done")
@@ -118,5 +131,5 @@ println("done")
 # @show path = [101, 3, 54, 94, 38, 1, 59, 91, 34, 102]
 # @test isapprox(cost, lab1.cost, atol=1e-7)
 
-@test isapprox(sol.cost, lab1.cost, atol=1e-7)
-@test isapprox(lab1.cost, lab2.cost, atol=1e-7)
+# @test isapprox(sol.cost, lab2.cost, atol=1e-7)
+# @test isapprox(lab1.cost, lab2.cost, atol=1e-7)
