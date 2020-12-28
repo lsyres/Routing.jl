@@ -144,7 +144,7 @@ function pulse_procedure!(p::Label, primal_bounds::Vector{Label}, lower_bounds::
                 end
             end
         end
-        if p.cost < 0
+        if root == pg.origin && p.cost < 0
             push!(neg_cost_routes, p)
         end
         return    
@@ -189,7 +189,7 @@ function solveESPPRCpulse(org_pg::ESPPRC_Instance; step=-1, max_neg_cost_routes=
     time_ub = calculate_max_T(pg)
     time_lb = 0.1 * time_ub
     if step == -1 
-        step = Int(floor(time_ub*0.9 / 20)) + 1    
+        step = Int(floor(time_ub*0.9 / 10)) + 1    
     end
     btimes = collect(time_ub-step : -step : time_lb)
 

@@ -191,10 +191,7 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-
         )
 
         t1 = time()
-        # best_p, all_negative_reduced_cost_paths = solveESPPRC(pg, max_neg_cost_routes=10000, method=pricing_method)
-        best_p, all_negative_reduced_cost_paths = solveESPPRC(pg, max_neg_cost_routes=10000, method="pulse")
-        # best_p, all_negative_reduced_cost_paths = solveESPPRC(pg, max_neg_cost_routes=400, method="monodirectional")
-        
+        best_p, all_negative_reduced_cost_paths = solveESPPRC(pg, max_neg_cost_routes=400, method=pricing_method)        
         t2 = time()
 
         if iter == 1 || iter % 10 == 0 || abs(best_p.cost) < 1e-6
@@ -203,7 +200,6 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-
             n_neg_cost_paths = length(all_negative_reduced_cost_paths)
             @show iter, best_reduced_cost, n_neg_cost_paths, pricing_time
         end
-
 
         added_path_counter = 0
 
@@ -252,4 +248,3 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-
     return sol_y, sol_routes, sol_obj
 
 end
-
