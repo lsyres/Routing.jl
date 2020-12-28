@@ -116,7 +116,7 @@ bool LabelingAlgorithm::dominate(Label& label1, Label& label2) {
     return true;
 }
 
-bool LabelingAlgorithm::EFF(vector<list<Label>>& label_set, Label& label, int v_j) {
+bool LabelingAlgorithm::EFF(vector< list<Label> >& label_set, Label& label, int v_j) {
     bool is_updated = false;
 
     list<Label>::iterator it;
@@ -146,7 +146,7 @@ bool LabelingAlgorithm::EFF(vector<list<Label>>& label_set, Label& label, int v_
     return is_updated;
 }
 
-void LabelingAlgorithm::forward_search(int v_i, vector<list<Label>>& label_set, queue<int>& set_E) {
+void LabelingAlgorithm::forward_search(int v_i, vector< list<Label> >& label_set, queue<int>& set_E) {
     for (Label label : label_set.at(v_i)) {
         for (int v_j : forward_star.at(v_i)) {
             if (label.flag.at(v_j) == 0) { 
@@ -173,7 +173,7 @@ void LabelingAlgorithm::forward_search(int v_i, vector<list<Label>>& label_set, 
     }
 }
 
-vector<int> LabelingAlgorithm::find_best_label(vector<list<Label>>& label_set) {
+vector<int> LabelingAlgorithm::find_best_label(vector< list<Label> >& label_set) {
     double best_cost = inf;
     vector<int> opt_path;
     for (auto const& it : label_set.at(destination)) {
@@ -216,7 +216,7 @@ vector<int> LabelingAlgorithm::monodirectional() {
     iota(critical_nodes.begin(), critical_nodes.end(), 0);
 
     // Initial Label Set
-    vector<list<Label>> label_set;
+    vector< list<Label> > label_set;
     for (int v_i=0; v_i < n_nodes; v_i++) {
         list<Label> tmp_label;
         label_set.push_back(tmp_label);

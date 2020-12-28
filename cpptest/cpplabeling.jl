@@ -60,11 +60,11 @@ function solveESPPRC_cpp_labeling(espprc::ESPPRC_Instance)
     return convert(Vector{Int}, j_path) .+= 1
 end
 
-solomon_dataset_name = "R102_050"
+solomon_dataset_name = "C101_050"
 solomon = load_solomon(solomon_dataset_name)
 num_nodes = solomon.nodes |> length
 # Random.seed!(123)
-dual_var_org = (rand(num_nodes) * 15)
+dual_var_org = rand(1:20, num_nodes)
 dual_var_pulse = [dual_var_org[2:end]; 0.0; 0.0]
 espprc = solomon_to_espprc(solomon, dual_var_pulse)
 @time lab_path = solveESPPRC_cpp_labeling(espprc)
