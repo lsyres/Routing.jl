@@ -3,7 +3,21 @@
 
 
 # Main ESPPRC function
-function solveESPPRC(org_pg::ESPPRC_Instance; max_neg_cost_routes=MAX_INT, method="pulse", DSSR=false)
+function solveESPPRC(org_pg::ESPPRC_Instance; method="pulse", DSSR=false)
+    if method == "pulse"
+        best_label, _ = solveESPPRCpulse(org_pg)
+    elseif method == "monodirectional"
+        best_label, _ = monodirectional(org_pg)
+    elseif method == "bidirectional"
+        best_label, _ = bidirectional(org_pg; DSSR=DSSR)
+    else 
+        best_label, _ = solveESPPRCpulse(org_pg)
+    end
+
+    return best_label
+end
+
+function solveESPPRC_vrp(org_pg::ESPPRC_Instance; max_neg_cost_routes=MAX_INT, method="pulse", DSSR=false)
     if method == "pulse"
         return solveESPPRCpulse(org_pg; max_neg_cost_routes=max_neg_cost_routes)
     elseif method == "monodirectional"
@@ -14,5 +28,3 @@ function solveESPPRC(org_pg::ESPPRC_Instance; max_neg_cost_routes=MAX_INT, metho
         return solveESPPRCpulse(org_pg; max_neg_cost_routes=max_neg_cost_routes)
     end
 end
-
-

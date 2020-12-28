@@ -159,27 +159,19 @@ end
 
 function prepare_return_values!(labels::Vector{Label}, max_neg_cost_routes)
     if isempty(labels)
-        if max_neg_cost_routes < MAX_INT
-            return Label(0, 0, [], Inf, []), []
-        else
-            return Label(0, 0, [], Inf, []) 
-        end
+        return Label(0, 0, [], Inf, []), []
     else
         best_label = find_best_label!(labels)
-        if max_neg_cost_routes < MAX_INT
-            idx = findfirst(x -> x.cost >= 0.0, labels)
-            if  idx == 1
-                neg_cost_routes = []
-            elseif isnothing(idx)
-                neg_cost_routes = labels
-            else
-                idx = min(idx-1, max_neg_cost_routes)
-                neg_cost_routes = labels[1:idx]
-            end
-            return best_label, neg_cost_routes
+        idx = findfirst(x -> x.cost >= 0.0, labels)
+        if  idx == 1
+            neg_cost_routes = []
+        elseif isnothing(idx)
+            neg_cost_routes = labels
         else
-            return best_label
+            idx = min(idx-1, max_neg_cost_routes)
+            neg_cost_routes = labels[1:idx]
         end
+        return best_label, neg_cost_routes
     end
 end
 

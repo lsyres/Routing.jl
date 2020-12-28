@@ -202,9 +202,9 @@ function solveESPPRCpulse(org_pg::ESPPRC_Instance; step=-1, max_neg_cost_routes=
     p = initialize_label(pg.origin, n_nodes)
     pulse_procedure!(p, primal_bounds, lower_bounds, btimes, neg_cost_routes, pg)
 
-    if max_neg_cost_routes < MAX_INT
+    if max_neg_cost_routes < MAX_INT && !isempty(neg_cost_routes)
         return find_best_label!(neg_cost_routes), neg_cost_routes
     else
-        return primal_bounds[pg.origin]
+        return primal_bounds[pg.origin], neg_cost_routes
     end
 end
