@@ -17,7 +17,8 @@ function should_rollback(p::Label, pg::ESPPRC_Instance)
     cost_pp = pg.cost[v_i, v_j]
 
     path_p = p.path
-    path_pp = [p.path[1:end-2]; v_j]
+    path_pp = p.path[1:end-2]
+    push!(path_pp, v_j)
 
     time_p = calculate_path_time(path_p, pg)
     time_pp = calculate_path_time(path_pp, pg)
@@ -208,6 +209,7 @@ function solveESPPRCpulse(org_pg::ESPPRC_Instance; step=-1, max_neg_routes=MAX_I
     p = initialize_label(pg.origin, n_nodes)
     pulse_procedure!(p, primal_bounds, lower_bounds, btimes, neg_cost_routes, pg)
 
+    @show counter
     if max_neg_routes < MAX_INT && !isempty(neg_cost_routes)
         return find_best_label!(neg_cost_routes), neg_cost_routes
     else

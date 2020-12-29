@@ -29,7 +29,7 @@ end
 
 function dominate(label::Label, other_label::Label, pg::ESPPRC_Instance)
     # Check if label dominates other_label
-    CN = collect(pg.critical_nodes) :: Vector{Int}
+    # CN = collect(pg.critical_nodes) :: Vector{Int}
 
     if label.cost > other_label.cost
         return false
@@ -42,7 +42,7 @@ function dominate(label::Label, other_label::Label, pg::ESPPRC_Instance)
     # elseif any(label.flag[CN] .> other_label.flag[CN])
         # return false
     else
-        for i in CN
+        for i in pg.critical_nodes
             if label.flag[i] > other_label.flag[i]
                 return false
             end
@@ -66,7 +66,7 @@ function update_flag!(label::Label, pg::ESPPRC_Instance; direction="backward")
             end
         end
     elseif direction=="backward"
-        v_j = label.path[1]
+        v_j = label.path[end]
         label.flag[v_j] = 1
         for v_k in predecessors(v_j, pg)
             if label.flag[v_k] == 0
@@ -84,7 +84,8 @@ end
 function EFF!(Λ::Vector{Vector{Label}}, label::Label, v_j::Int, pg::ESPPRC_Instance)
     is_updated = false
     idx = Int[]
-    for n in eachindex(Λ[v_j])
+	n_nodes = length(pg.service_time)
+    for n in 1:length(Λ[v_j])
         other_label = Λ[v_j][n]
         if dominate(label, other_label, pg) && !is_identical(label, other_label)
             push!(idx, n)
@@ -97,7 +98,7 @@ function EFF!(Λ::Vector{Vector{Label}}, label::Label, v_j::Int, pg::ESPPRC_Inst
     end
 
     is_non_dominated = true
-    for n in eachindex(Λ[v_j])
+    for n in 1:length(Λ[v_j])
         other_label = Λ[v_j][n]
         if dominate(other_label, label, pg) || is_identical(label, other_label)
             is_non_dominated = false
@@ -135,7 +136,7 @@ function forward_extend(λ_i::Label, v_i::Int, v_j::Int, pg::ESPPRC_Instance)
     is_reachable, new_time, new_load = forward_reach(λ_i, v_i, v_j, pg)
 
     if !is_reachable
-        λ_i.flag[v_j] = 1
+        # λ_i.flag[v_j] = 1
         return nothing
     end
     new_cost = λ_i.cost + pg.cost[v_i, v_j]
@@ -155,12 +156,13 @@ function backward_extend(λ_i::Label, v_i::Int, v_k::Int, pg::ESPPRC_Instance)
     is_reachable, new_time, new_load = backward_reach(λ_i, v_i, v_k, pg)
 
     if !is_reachable
-        λ_i.flag[v_k] = 1
+        # λ_i.flag[v_k] = 1
         return nothing
     end
     new_cost = pg.cost[v_k, v_i] + λ_i.cost
     new_path = copy(λ_i.path)
-    pushfirst!(new_path, v_k)
+    # pushfirst!(new_path, v_k)
+    push!(new_path, v_k)
 
     label = Label(new_time, new_load, copy(λ_i.flag), new_cost, new_path)
     update_flag!(label, pg, direction="backward")
@@ -189,7 +191,7 @@ end
 
 function join_labels!(final_labels::Vector{Label}, λ_i::Label, λ_j::Label, pg::ESPPRC_Instance)
     v_i = λ_i.path[end] # forward label
-    v_j = λ_j.path[1]   # backward label
+    v_j = λ_j.path[end] # backward label (the path is also stored reversed.)
 
     # Check no cycle
     new_flag = λ_i.flag .+ λ_j.flag
@@ -208,7 +210,8 @@ function join_labels!(final_labels::Vector{Label}, λ_i::Label, λ_j::Label, pg:
         return Inf
     end
 
-    new_path = [λ_i.path; λ_j.path]
+    new_path = copy(λ_i.path)
+    append!(new_path, reverse(λ_j.path))
     new_cost = λ_i.cost + pg.cost[v_i, v_j] + λ_j.cost
     new_time = calculate_path_time(new_path, pg)
 
@@ -434,7 +437,7 @@ function bidirectional(org_pg::ESPPRC_Instance; max_neg_routes=MAX_INT::Int, DSS
     global counter2 = 0
 
     # Search
-    while has_cycle
+    @profview  while has_cycle
         # Initial Label Sets
         Λ_fw = Vector{Vector{Label}}(undef, n_nodes)
         Λ_bw = Vector{Vector{Label}}(undef, n_nodes)
