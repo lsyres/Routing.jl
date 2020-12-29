@@ -17,14 +17,14 @@ function solveESPPRC(org_pg::ESPPRC_Instance; method="pulse", DSSR=false)
     return best_label
 end
 
-function solveESPPRC_vrp(org_pg::ESPPRC_Instance; max_neg_cost_routes=MAX_INT, method="pulse", DSSR=false)
+function solveESPPRC_vrp(org_pg::ESPPRC_Instance; max_neg_routes=MAX_INT, method="pulse", DSSR=false)
     if method == "pulse"
-        return solveESPPRCpulse(org_pg; max_neg_cost_routes=max_neg_cost_routes)
+        return solveESPPRCpulse(org_pg; max_neg_routes=max_neg_routes)
     elseif method == "monodirectional"
-        return monodirectional(org_pg; max_neg_cost_routes=max_neg_cost_routes, DSSR=DSSR)
+        return monodirectional(org_pg; max_neg_routes=max_neg_routes, DSSR=DSSR)
     elseif method == "bidirectional"
-        return bidirectional(org_pg; max_neg_cost_routes=max_neg_cost_routes, DSSR=DSSR)
+        return bidirectional(org_pg; max_neg_routes=max_neg_routes, DSSR=DSSR)
     else 
-        return solveESPPRCpulse(org_pg; max_neg_cost_routes=max_neg_cost_routes)
+        return solveESPPRCpulse(org_pg; max_neg_routes=max_neg_routes)
     end
 end

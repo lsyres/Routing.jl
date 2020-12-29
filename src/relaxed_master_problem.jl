@@ -191,7 +191,7 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-
         )
 
         t1 = time()
-        best_p, all_negative_reduced_cost_paths = solveESPPRC_vrp(pg, max_neg_cost_routes=400, method=pricing_method)        
+        best_p, all_negative_reduced_cost_paths = solveESPPRC_vrp(pg, max_neg_routes=400, method=pricing_method)        
         t2 = time()
 
         if iter == 1 || iter % 10 == 0 || abs(best_p.cost) < 1e-6

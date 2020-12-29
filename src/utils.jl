@@ -103,7 +103,7 @@ function backward_reach(λ_i::Label, v_i::Int, v_k::Int, pg::ESPPRC_Instance)
     b_bw_k = pg.late_time[v_k] .+ pg.service_time[v_k]
 
     # Check time 
-    max_T = pg.info["max_T"]
+    max_T = pg.max_T
     min_time_required = max(pg.time[v_k, v_i] + pg.service_time[v_i] + λ_i.time, max_T - b_bw_k)
     if min_time_required > max_T - a_bw_k
         return false, nothing, nothing

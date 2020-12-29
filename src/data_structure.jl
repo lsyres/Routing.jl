@@ -34,15 +34,21 @@ mutable struct ESPPRC_Instance
     early_time  :: Vector{Float64}
     late_time   :: Vector{Float64}
     service_time:: Vector{Float64}
-    forward_star:: Vector{Vector{Int}}
-    reverse_star:: Vector{Vector{Int}}
-    info        :: Dict{Any, Any}
+    forward_star    :: Vector{Vector{Int}}
+    reverse_star    :: Vector{Vector{Int}}
+    critical_nodes  :: Set{Int}
+    max_T           :: Float64
+    max_neg_routes  :: Int
 end
 function ESPPRC_Instance(origin, destination, capacity, cost, time, load, early_time, late_time, service_time)
     n_nodes = length(service_time)
     fs = save_forward_star(n_nodes, cost; sorted=true)
     rs = save_reverse_star(n_nodes, cost; sorted=true)
-    return ESPPRC_Instance(origin, destination, capacity, cost, time, load, early_time, late_time, service_time, fs, rs, Dict())
+    critical_nodes = Set(1:n_nodes)
+    max_T = Inf
+    max_neg_routes = MAX_INT
+    return ESPPRC_Instance(origin, destination, capacity, cost, time, load, early_time, late_time, service_time, 
+                            fs, rs, critical_nodes, max_T, max_neg_routes)
 end
 ################################################
 

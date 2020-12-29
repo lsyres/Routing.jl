@@ -117,7 +117,7 @@ end # bounding_scheme
 
 
 function pulse_procedure!(p::Label, primal_bounds::Vector{Label}, lower_bounds::Matrix{Float64}, btimes::Vector{Float64}, neg_cost_routes::Vector{Label}, pg::ESPPRC_Instance; init_time=0.0, bounding=false, root=pg.origin)
-    if length(neg_cost_routes) >= pg.info["max_neg_cost_routes"]
+    if length(neg_cost_routes) >= pg.max_neg_routes
         return
     end
 
@@ -131,7 +131,8 @@ function pulse_procedure!(p::Label, primal_bounds::Vector{Label}, lower_bounds::
 
     if v_i == pg.destination   # Arrived at the destination. Update the best bounds
         if p.cost < primal_bounds[root].cost 
-            primal_bounds[root] = deepcopy(p)
+            primal_bounds[root] = Label(p.time, p.load, copy(p.flag), p.cost, copy(p.path))
+            # deepcopy(p)
         end
         if bounding
             k = bounding_time_index(init_time, btimes)
@@ -163,12 +164,17 @@ function pulse_procedure!(p::Label, primal_bounds::Vector{Label}, lower_bounds::
         if p.flag[v_j] == 0 
             isreachable, new_time, new_load = forward_reach(p, v_i, v_j, pg)
             if isreachable 
-                pp = deepcopy(p)
+                pp = Label(new_time, new_load, copy(p.flag), p.cost + pg.cost[v_i, v_j], copy(p.path))
                 push!(pp.path, v_j)
-                pp.cost += pg.cost[v_i, v_j]
-                pp.load = new_load 
-                pp.time = new_time 
-                pp.flag[v_j] = 1 
+                pp.flag[v_j] = 1
+
+                # pp = deepcopy(p)
+                # push!(pp.path, v_j)
+                # pp.cost += pg.cost[v_i, v_j]
+                # pp.load = new_load 
+                # pp.time = new_time 
+                # pp.flag[v_j] = 1 
+
                 pulse_procedure!(pp, primal_bounds, lower_bounds, btimes, neg_cost_routes, pg; 
                             init_time=init_time, bounding=bounding, root=root)
             end
@@ -178,10 +184,10 @@ function pulse_procedure!(p::Label, primal_bounds::Vector{Label}, lower_bounds::
     return 
 end
 
-function solveESPPRCpulse(org_pg::ESPPRC_Instance; step=-1, max_neg_cost_routes=MAX_INT::Int)
+function solveESPPRCpulse(org_pg::ESPPRC_Instance; step=-1, max_neg_routes=MAX_INT::Int)
     pg = deepcopy(org_pg)
     graph_reduction!(pg)
-    pg.info["max_neg_cost_routes"] = max_neg_cost_routes
+    pg.max_neg_routes = max_neg_routes
 
     n_nodes = length(pg.late_time)
 
@@ -202,7 +208,7 @@ function solveESPPRCpulse(org_pg::ESPPRC_Instance; step=-1, max_neg_cost_routes=
     p = initialize_label(pg.origin, n_nodes)
     pulse_procedure!(p, primal_bounds, lower_bounds, btimes, neg_cost_routes, pg)
 
-    if max_neg_cost_routes < MAX_INT && !isempty(neg_cost_routes)
+    if max_neg_routes < MAX_INT && !isempty(neg_cost_routes)
         return find_best_label!(neg_cost_routes), neg_cost_routes
     else
         return primal_bounds[pg.origin], neg_cost_routes
