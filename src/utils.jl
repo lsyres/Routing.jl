@@ -8,25 +8,33 @@ function save_forward_star(pg::ESPPRC_Instance; sorted=true)
     n_nodes = length(pg.service_time)
     return save_forward_star(n_nodes, pg.cost; sorted=sorted)
 end
-function save_forward_star(n_nodes, cost; sorted=true)
-    fs = Vector{Vector{Int}}(undef, n_nodes)
+function save_forward_star(n_nodes::Int, destination::Int, cost::Matrix{Float64}; sorted=true)
+    forward_star = Vector{Vector{Int}}(undef, n_nodes)
     for v_i in 1:n_nodes
-        forward_star = findall(x -> x < Inf, cost[v_i, :])
-        if sorted 
-            sort!(forward_star, by= x->cost[v_i, x])
+        if v_i == destination
+            forward_star[v_i] = Int[]
+        else
+            fs = findall(x -> x < Inf, cost[v_i, :])
+            if sorted 
+                sort!(fs, by= x->cost[v_i, x])
+            end
+            forward_star[v_i] = fs 
         end
-        fs[v_i] = forward_star 
     end
-    return fs 
+    return forward_star 
 end
 function save_forward_star!(pg::ESPPRC_Instance; sorted=true)
     n_nodes = length(pg.service_time)
     for v_i in 1:n_nodes
-        forward_star = findall(x -> x < Inf, pg.cost[v_i, :])
-        if sorted 
-            sort!(forward_star, by= x->pg.cost[v_i, x])
+        if v_i == pg.destination
+            pg.forward_star[v_i] = Int[]
+        else        
+            fs = findall(x -> x < Inf, pg.cost[v_i, :])
+            if sorted 
+                sort!(fs, by= x->pg.cost[v_i, x])
+            end
+            pg.forward_star[v_i] = fs 
         end
-        pg.forward_star[v_i] = forward_star 
     end
 end
 
@@ -34,25 +42,33 @@ function save_reverse_star(pg::ESPPRC_Instance; sorted=true)
     n_nodes = length(pg.service_time)
     return save_reverse_star(n_nodes, pg.cost; sorted=sorted)
 end
-function save_reverse_star(n_nodes, cost; sorted=true)
-    rs = Vector{Vector{Int}}(undef, n_nodes)
+function save_reverse_star(n_nodes::Int, origin::Int, cost::Matrix{Float64}; sorted=true)
+    reverse_star = Vector{Vector{Int}}(undef, n_nodes)
     for v_i in 1:n_nodes
-        reverse_star = findall(x -> x < Inf, cost[:, v_i])
-        if sorted 
-            sort!(reverse_star, by= x->cost[x, v_i])
+        if v_i == origin
+            reverse_star[v_i] = Int[]
+        else    
+            rs = findall(x -> x < Inf, cost[:, v_i])
+            if sorted 
+                sort!(rs, by= x->cost[x, v_i])
+            end
+            reverse_star[v_i] = rs 
         end
-        rs[v_i] = reverse_star 
     end
-    return rs
+    return reverse_star
 end
 function save_reverse_star!(pg::ESPPRC_Instance; sorted=true)
     n_nodes = length(pg.service_time)
     for v_i in 1:n_nodes
-        reverse_star = findall(x -> x < Inf, pg.cost[:, v_i])
-        if sorted 
-            sort!(reverse_star, by= x->pg.cost[x, v_i])
+        if v_i == pg.origin
+            pg.reverse_star[v_i] = Int[]
+        else            
+            rs = findall(x -> x < Inf, pg.cost[:, v_i])
+            if sorted 
+                sort!(rs, by= x->pg.cost[x, v_i])
+            end
+            pg.reverse_star[v_i] = rs 
         end
-        pg.reverse_star[v_i] = reverse_star 
     end
 end
 
@@ -64,6 +80,7 @@ function graph_reduction!(pg::ESPPRC_Instance)
 
     for j in 1:n_nodes
         pg.cost[j, j] = Inf
+        pg.cost[pg.destination, j] = Inf
         for i in 1:n_nodes
             if i != j && !in(i, OD) && !in(j, OD)
                 if pg.early_time[i] + pg.service_time[i] + pg.time[i, j] > pg.late_time[j]
@@ -80,6 +97,10 @@ end
 
 
 function forward_reach(λ_i::Label, v_i::Int, v_j::Int, pg::ESPPRC_Instance)
+    if v_i == pg.destination
+        return false, NaN, NaN
+    end
+
     # Check time 
     arrival_time = max( λ_i.time + pg.service_time[v_i] + pg.time[v_i, v_j] , pg.early_time[v_j] )
     if arrival_time > pg.late_time[v_j]
@@ -96,6 +117,10 @@ function forward_reach(λ_i::Label, v_i::Int, v_j::Int, pg::ESPPRC_Instance)
 end
 
 function backward_reach(λ_i::Label, v_i::Int, v_k::Int, pg::ESPPRC_Instance)
+    if v_i == pg.origin
+        return false, NaN, NaN
+    end
+
     # Currently at v_i 
     # extending arc: (v_k, v_i)
 

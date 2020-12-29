@@ -128,7 +128,6 @@ function pulse_procedure!(p::Label, primal_bounds::Vector{Label}, lower_bounds::
         return
     end
     p.time = max(p.time, pg.early_time[v_i])
-    global counter += 1
 
     if v_i == pg.destination   # Arrived at the destination. Update the best bounds
         if p.cost < primal_bounds[root].cost 
@@ -165,6 +164,8 @@ function pulse_procedure!(p::Label, primal_bounds::Vector{Label}, lower_bounds::
         if p.flag[v_j] == 0 
             isreachable, new_time, new_load = forward_reach(p, v_i, v_j, pg)
             if isreachable 
+                global counter += 1
+
                 pp = Label(new_time, new_load, copy(p.flag), p.cost + pg.cost[v_i, v_j], copy(p.path))
                 push!(pp.path, v_j)
                 pp.flag[v_j] = 1

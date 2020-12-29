@@ -83,20 +83,20 @@ end
 
 function EFF!(Λ::Vector{Vector{Label}}, label::Label, v_j::Int, pg::ESPPRC_Instance)
     is_updated = false
-    idx = Int[]
-	n_nodes = length(pg.service_time)
-    for n in 1:length(Λ[v_j])
+    n_nodes = length(pg.service_time)
+
+    # Delete existing lables, if dominated by new candidate `label`.
+    n = 1
+    while n <= length(Λ[v_j])
         other_label = Λ[v_j][n]
         if dominate(label, other_label, pg) && !is_identical(label, other_label)
-            push!(idx, n)
+            deleteat!(Λ[v_j], n)
+        else
+            n += 1
         end
     end
 
-    if !isempty(idx)
-        deleteat!(Λ[v_j], idx)
-        is_updated = true
-    end
-
+    # add the new candidate `label` to the label set, if not dominated.
     is_non_dominated = true
     for n in 1:length(Λ[v_j])
         other_label = Λ[v_j][n]
@@ -105,10 +105,8 @@ function EFF!(Λ::Vector{Vector{Label}}, label::Label, v_j::Int, pg::ESPPRC_Inst
             break
         end
     end
-
     if is_non_dominated
         push!(Λ[v_j], label)
-        global counter += 1
         is_updated = true
     end
 
@@ -117,19 +115,11 @@ end
 
 
 function predecessors(v_i::Int, pg::ESPPRC_Instance)
-    if v_i == pg.origin
-        return Int[]
-    else
-        return pg.reverse_star[v_i]
-    end
+    return pg.reverse_star[v_i]
 end
 
 function successors(v_i::Int, pg::ESPPRC_Instance)
-    if v_i == pg.destination
-        return Int[]
-    else
-        return pg.forward_star[v_i]
-    end
+    return pg.forward_star[v_i]
 end
 
 function forward_extend(λ_i::Label, v_i::Int, v_j::Int, pg::ESPPRC_Instance)
@@ -143,6 +133,7 @@ function forward_extend(λ_i::Label, v_i::Int, v_j::Int, pg::ESPPRC_Instance)
     new_path = copy(λ_i.path)
     push!(new_path, v_j)
 
+    global counter += 1
     label = Label(new_time, new_load, copy(λ_i.flag), new_cost, new_path)
     update_flag!(label, pg, direction="forward")
 
@@ -164,6 +155,7 @@ function backward_extend(λ_i::Label, v_i::Int, v_k::Int, pg::ESPPRC_Instance)
     # pushfirst!(new_path, v_k)
     push!(new_path, v_k)
 
+    global counter += 1
     label = Label(new_time, new_load, copy(λ_i.flag), new_cost, new_path)
     update_flag!(label, pg, direction="backward")
 
@@ -391,15 +383,15 @@ function monodirectional(org_pg::ESPPRC_Instance; max_neg_routes=MAX_INT::Int, D
             has_cycle = false
             final_labels = Λ_fw[pg.destination]
 
-            @show counter
-            @show length(final_labels)
+            # @show counter, counter1, counter2
+            # @show length(final_labels)
             total_labels = 0
             for L in Λ_fw
                 total_labels += length(L)
             end
-            @show total_labels
+            # @show total_labels
         else
-            @show cycle_nodes
+            # @show cycle_nodes
             union!(pg.critical_nodes, cycle_nodes)
             CN_iter += 1
         end
@@ -491,8 +483,8 @@ function bidirectional(org_pg::ESPPRC_Instance; max_neg_routes=MAX_INT::Int, DSS
         if isempty(cycle_nodes)
             has_cycle = false
 
-            @show counter, counter1, counter2
-            @show length(final_labels)
+            # @show counter, counter1, counter2
+            # @show length(final_labels)
             total_labels = 0
             for L in Λ_fw
                 total_labels += length(L)
@@ -500,7 +492,7 @@ function bidirectional(org_pg::ESPPRC_Instance; max_neg_routes=MAX_INT::Int, DSS
             for L in Λ_bw
                 total_labels += length(L)
             end
-            @show total_labels
+            # @show total_labels
 
         else
             union!(pg.critical_nodes, cycle_nodes)

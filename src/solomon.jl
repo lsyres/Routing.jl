@@ -8,8 +8,9 @@ distance(n1::Node, n2::Node) = sqrt((n1.cx - n2.cx)^2 + (n1.cy - n2.cy)^2)
 
 function calculate_solomon_cost(node::Array{Node})
     n_nodes = length(node)
-    cost = zeros(n_nodes, n_nodes)
+    cost = Matrix{Float64}(undef, n_nodes, n_nodes)
     for i in 1:n_nodes-1
+        cost[i, i] = Inf
         for j in i+1:n_nodes
             c = distance(node[i], node[j])
             c = floor(10 * c) / 10 
