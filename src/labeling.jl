@@ -195,8 +195,10 @@ function join_labels!(final_labels::Vector{Label}, λ_i::Label, λ_j::Label, pg:
 
     # Check no cycle
     new_flag = λ_i.flag .+ λ_j.flag
-    if !prod(λ_i.flag .+ λ_j.flag .<= 1)
-        return Inf
+    if i in 1:length(new_flag)
+        if new_flag[i] > 1
+            return Inf
+        end
     end
     # Check capacity
     new_load = λ_i.load + pg.load[v_i, v_j] + λ_j.load
@@ -204,9 +206,8 @@ function join_labels!(final_labels::Vector{Label}, λ_i::Label, λ_j::Label, pg:
         return Inf
     end
     # Check time
-    max_T = pg.max_T
     time_check = λ_i.time + pg.service_time[v_i] + pg.time[v_i, v_j] + pg.service_time[v_j] + λ_j.time
-    if time_check > max_T
+    if time_check > pg.max_T
         return Inf
     end
 
