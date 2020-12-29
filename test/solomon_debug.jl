@@ -1,4 +1,5 @@
-using VRPTW
+# using VRPTW
+include("../src/VRPTWinclude.jl")
 using Test
 using DataStructures
 
