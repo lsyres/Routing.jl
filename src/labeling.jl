@@ -437,7 +437,7 @@ function bidirectional(org_pg::ESPPRC_Instance; max_neg_routes=MAX_INT::Int, DSS
     global counter2 = 0
 
     # Search
-    @profview  while has_cycle
+    while has_cycle
         # Initial Label Sets
         Λ_fw = Vector{Vector{Label}}(undef, n_nodes)
         Λ_bw = Vector{Vector{Label}}(undef, n_nodes)
