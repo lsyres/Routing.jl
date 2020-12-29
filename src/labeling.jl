@@ -195,7 +195,7 @@ function join_labels!(final_labels::Vector{Label}, λ_i::Label, λ_j::Label, pg:
 
     # Check no cycle
     new_flag = λ_i.flag .+ λ_j.flag
-    if i in 1:length(new_flag)
+    for i in 1:length(new_flag)
         if new_flag[i] > 1
             return Inf
         end
