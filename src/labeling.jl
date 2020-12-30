@@ -365,7 +365,7 @@ function monodirectional(org_pg::ESPPRC_Instance; max_neg_routes=MAX_INT::Int, D
     final_labels = Label[]
     best_label = nothing
     has_cycle = true
-    CN_iter = 1
+    DSSR_iter = 1
     global counter = 0
 
 
@@ -413,14 +413,14 @@ function monodirectional(org_pg::ESPPRC_Instance; max_neg_routes=MAX_INT::Int, D
         else
             # @show cycle_nodes
             union!(pg.critical_nodes, cycle_nodes)
-            CN_iter += 1
+            DSSR_iter += 1
         end
     end
     # @show size(final_labels)
 
-    # @show CN_iter
-
-
+    if DSSR 
+        @show DSSR_iter
+    end
 
     return prepare_return_values!(final_labels, max_neg_routes)
 
@@ -516,11 +516,13 @@ function bidirectional(org_pg::ESPPRC_Instance; max_neg_routes=MAX_INT::Int, DSS
 
         else
             union!(pg.critical_nodes, cycle_nodes)
-            CN_iter += 1
+            DSSR_iter += 1
         end
     end
 
-    # @show CN_iter
+    if DSSR 
+        @show DSSR_iter
+    end
 
     # @show count_fw_labels, count_bw_labels, size(final_labels)
     return prepare_return_values!(final_labels, max_neg_routes)
