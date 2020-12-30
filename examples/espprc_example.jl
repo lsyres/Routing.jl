@@ -21,8 +21,6 @@ cost = - rand(17, 17)
 # travel_time matrix:
 # Some elements are Inf, meaning disconnected
 # travel_time is used to check the time windows constraints
-# If you have service time in each node, then it should be added to travel_time
-# e.g., travel_time[i,j] = travel_time[i,j] + service_time[i]
 travel_time = Float64[
     0 8 3 2 6 8 4 8 8 13 7 5 8 12 10 Inf 6; 
     8 0 11 10 6 3 9 5 8 4 15 14 13 9 18 9 9; 
@@ -53,7 +51,7 @@ for i in 1:n_nodes, j in 1:n_nodes
     load[i, j] = load_on_node[j]
 end
 
-# Time windows, for all nodes
+# Time windows, for all nodes, including origin and destination
 time_windows = [
     (0, 12),  # 1
     (0, 15),  # 2
@@ -97,6 +95,19 @@ pg = ESPPRC_Instance(
     late_time,
     service_time
 )
+
+# Solve the ESPPRC 
+solution_label = solveESPPRC(pg)
+
+# It returns a Label instance. 
+# mutable struct Label
+#     time        ::Float64
+#     load        ::Float64
+#     flag        ::Vector{Int}
+#     cost        ::Float64
+#     path        ::Vector{Int}
+# end
+
 
 
 @info("Testing for OD=($(pg.origin), $(pg.destination))")
