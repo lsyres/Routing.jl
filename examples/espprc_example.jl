@@ -2,7 +2,6 @@
 # Modified from the example given by Google OR-Tools https://developers.google.com/optimization/routing/vrp
 
 using Routing
-using Test 
 using Random
 
 # This example is modifed from the VRPTW example from OR-Tools
@@ -16,7 +15,7 @@ n_nodes = 17
 # The objective of ESPPRC is to minimize the total cost 
 # Randomly generated in this example 
 # cost allows negative values
-cost = - rand(17, 17) 
+cost = - rand(n_nodes, n_nodes) 
 
 # travel_time matrix:
 # Some elements are Inf, meaning disconnected
@@ -53,23 +52,23 @@ end
 
 # Time windows, for all nodes, including origin and destination
 time_windows = [
-    (0, 12),  # 1
-    (0, 15),  # 2
-    (16, 28),  # 3
-    (10, 13),  # 4
-    (0, 5),  # 5
-    (5, 10),  # 6
-    (0, 4),  # 7
-    (5, 10),  # 8
-    (0, 3),  # 9
-    (10, 16),  # 10
-    (10, 15),  # 11
-    (0, 5),  # 12
-    (5, 10),  # 13
-    (7, 8),  # 14
-    (10, 15),  # 15
-    (11, 15),  # 16
-    (0, 35), # 17
+    (0, 12),    #  1
+    (0, 15),    #  2
+    (16, 28),   #  3
+    (10, 13),   #  4
+    (0, 5),     #  5
+    (5, 10),    #  6
+    (0, 4),     #  7
+    (5, 10),    #  8
+    (0, 3),     #  9
+    (10, 16),   # 10
+    (10, 15),   # 11
+    (0, 5),     # 12
+    (5, 10),    # 13
+    (7, 8),     # 14
+    (10, 15),   # 15
+    (11, 15),   # 16
+    (0, 35),    # 17
 ]
 # If early_time is set for the origin, it means the earliest possible departure time.
 early_time = [time_windows[i][1] for i in 1:n_nodes]
@@ -78,11 +77,14 @@ late_time = [time_windows[i][2] for i in 1:n_nodes]
 # vehicle capacity
 capacity = 15 
 
+# service_time is just set to all zeros in this example
+service_time = zeros(n_nodes)
+
+
+
 # origin and destination
 origin, destination = 6, 3
 
-# service_time is just set to all zeros in this example
-service_time = zeros(n_nodes)
 
 pg = ESPPRC_Instance(
     origin,
@@ -99,18 +101,7 @@ pg = ESPPRC_Instance(
 # Solve the ESPPRC 
 solution_label = solveESPPRC(pg)
 
-# It returns a Label instance. 
-# mutable struct Label
-#     time        ::Float64
-#     load        ::Float64
-#     flag        ::Vector{Int}
-#     cost        ::Float64
-#     path        ::Vector{Int}
-# end
-
 @show solution_label.path
 @show solution_label.cost
 @show solution_label.time
 @show solution_label.load
-
-
