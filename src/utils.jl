@@ -1,3 +1,9 @@
+function round!(label::Label)
+    label.cost = round(label.cost, digits=DIGITS)
+    label.time = round(label.time, digits=DIGITS)
+    label.load = round(label.load, digits=DIGITS)
+end
+
 function initialize_label(origin, n_nodes; cost=0.0)
     flag = zeros(Int, n_nodes)
     flag[origin] = 1

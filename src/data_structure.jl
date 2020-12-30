@@ -22,6 +22,12 @@ mutable struct Label
     flag        ::Vector{Int}
     cost        ::Float64
     path        ::Vector{Int}
+    function Label(time::Float64, load::Float64, flag::Vector{Int}, cost::Float64, path::Vector{Int}) 
+        time = round(time, digits=DIGITS)
+        load = round(load, digits=DIGITS)
+        cost = round(cost, digits=DIGITS)
+        new(time, load, flag, cost, path)
+    end
 end
 
 mutable struct ESPPRC_Instance
