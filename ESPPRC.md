@@ -55,5 +55,6 @@ This package implements the following algorithms:
 
 You can call `solveESPPRC` from Python via [`pyjulia`](https://github.com/JuliaPy/pyjulia).
 
-1. Install `pyjulia` in your Python environment, following the [instruction](https://github.com/JuliaPy/pyjulia)). Note: when you run `julia.install()`, it will connect your current Python to PyCall.jl in your Julia. If you have used PyCall.jl within Julia, it may disconnect the old link. 
-2. With carefully noting the index differences, especially for `origin` and `destination`, try [this example](https://github.com/chkwon/Routing.jl/blob/master/examples/espprc_example.py).
+1. First install this pakcage `Routing.jl` in your Julia.
+2. Install `pyjulia` in your Python environment, following the [instruction](https://github.com/JuliaPy/pyjulia)). Note: when you run `julia.install()`, it will connect your current Python to PyCall.jl in your Julia. If you have used PyCall.jl within Julia, it may disconnect the old link. 
+3. With carefully noting the index differences, especially for `origin` and `destination`, try [this example](https://github.com/chkwon/Routing.jl/blob/master/examples/espprc_example.py).
