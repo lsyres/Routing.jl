@@ -320,6 +320,30 @@ function find_cycle_nodes(path::Vector{Int}, n_nodes::Int)
     return cycle_nodes
 end
 
+function hascycle(path::Vector{Int})
+    visit_count = zeros(Int, maximum(path))
+    for i in path 
+        visit_count[i] += 1 
+    end
+    has_cycle = !isnothing(findfirst(x->x>1, visit_count))
+    return has_cycle
+end
+
+function remove_labels_with_cycle!(Λ::Vector{Vector{Label}}, pg::ESPPRC_Instance)
+    n_nodes = length(pg.service_time)
+    for v_j in 1:n_nodes 
+        n = 1
+        while n <= length(Λ[v_j])
+            label = Λ[v_j][n]
+            if hascycle(label.path)
+                deleteat!(Λ[v_j], n)
+            else
+                n += 1
+            end
+        end
+    end
+end
+
 function monodirectional(org_pg::ESPPRC_Instance; max_neg_routes=MAX_INT::Int, DSSR=false)
     # Feillet, D., Dejax, P., Gendreau, M., Gueguen, C., 2004. An exact algorithm for the elementary shortest path problem with resource constraints: Application to some vehicle routing problems. Networks 44, 216–229. https://doi.org/10.1002/net.20033
 
