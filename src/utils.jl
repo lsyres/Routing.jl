@@ -1,4 +1,4 @@
-function initialize_label(origin, n_nodes; cost=0)
+function initialize_label(origin, n_nodes; cost=0.0)
     flag = zeros(Int, n_nodes)
     flag[origin] = 1
     return Label(0.0, 0.0, flag, cost, [origin])
@@ -158,7 +158,7 @@ function calculate_max_T(destination, time, early_time, late_time, service_time)
     n_nodes = length(early_time)
     set_N = 1:n_nodes
     tmp = [
-        late_time[i] + service_time[i] + time[i, pg.destination] 
+        late_time[i] + service_time[i] + time[i, destination] 
         for i in set_N if time[i, destination] < Inf
     ]
     max_T = min(maximum(tmp), late_time[destination])
