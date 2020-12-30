@@ -40,9 +40,9 @@ print_pct_neg_arcs(pg)
 
 @info("ESPPRC $(solomon_dataset_name) testing...")
 print("Pulse     : "); @time pulse = solveESPPRC(pg, method="pulse")
-print("Mono      : "); @time mono0= solveESPPRC(pg, method="monodirectional")
+print("Mono      : "); @time mono0 = solveESPPRC(pg, method="monodirectional")
 print("Mono DSSR : "); @time mono1 = solveESPPRC(pg, method="monodirectional", DSSR=true)
-print("Bi        : "); @time bidi0= solveESPPRC(pg, method="bidirectional")
+print("Bi        : "); @time bidi0 = solveESPPRC(pg, method="bidirectional")
 print("Bi   DSSR : "); @time bidi1 = solveESPPRC(pg, method="bidirectional", DSSR=true)
 
 
