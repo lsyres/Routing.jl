@@ -34,8 +34,14 @@ This package implements the following algorithms:
   - Callable by `solveESPPRC(problem::ESPPRC_Instance, method="pulse")`
 
 - A monodirectional dynamic programming method, as described in: [Feillet, D., Dejax, P., Gendreau, M., Gueguen, C., 2004. An exact algorithm for the elementary shortest path problem with resource constraints: Application to some vehicle routing problems. *Networks* 44, 216–229](https://onlinelibrary.wiley.com/doi/abs/10.1002/net.20033)
-  - Callable by `solveESPPRC(problem::ESPPRC_Instance, method="monodirectional")`
-  - The decremental state-space relaxation (DSSR) version as proposed by [Righini and Salani (2008)](https://doi.org/10.1002/net.20212) is callable by `solveESPPRC(problem::ESPPRC_Instance, method="monodirectional, DSSR=true")`.  
+  - Callable by 
+  ```julia
+  solveESPPRC(problem::ESPPRC_Instance, method="monodirectional")
+  ```
+  - The decremental state-space relaxation (DSSR) version as proposed by [Righini and Salani (2008)](https://doi.org/10.1002/net.20212) is callable by 
+  ```julia
+  solveESPPRC(problem::ESPPRC_Instance, method="monodirectional", DSSR=true)
+  ```
 
 - (work in progress, not working properly yet) A bidirectional dynamic programming method: [Righini, G., Salani, M., 2006. Symmetry helps: Bounded bi-directional dynamic programming for the elementary shortest path problem with resource constraints. *Discrete Optimization* 3, 255–273.](https://doi.org/10.1016/j.disopt.2006.05.007)
   - Callable by `solveESPPRC(problem::ESPPRC_Instance, method="bidirectional")`
