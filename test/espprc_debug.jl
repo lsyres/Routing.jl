@@ -5,21 +5,25 @@ using Test
 # For testing purpose
 using Random
 
-# Random.seed!(3232) # bug instance
-# solomon_dataset_name = "R101_100"
-# solomon = load_solomon(solomon_dataset_name)
-# n_customers = solomon.nodes |> length
-# dual_var = rand(0:20, n_customers)
+
+for i in 1:100
+rnd_seed = rand(0:1000000)
+Random.seed!(rnd_seed)
+# Random.seed!(3232) # old bug instance
+solomon_dataset_name = "R104_050"
+solomon = load_solomon(solomon_dataset_name)
+n_customers = length(solomon.nodes) - 1
+dual_var = rand(0:20, n_customers)
 
 # Random.seed!(0)
 
 # For Debugging
 include("debugging.jl")
 
-solomon_dataset_name = "C102_025"
-solomon = load_solomon(solomon_dataset_name)
-n_customers = length(solomon.nodes) - 1
-dual_var = rand(0:20, n_customers)
+# solomon_dataset_name = "C102_050"
+# solomon = load_solomon(solomon_dataset_name)
+# n_customers = length(solomon.nodes) - 1
+# dual_var = rand(0:20, n_customers)
 # dual_var = ones(n_customers) .* 10
 
 # dual_var = [3.8237089201877836,5.935211267605691,3.5788732394366782,7.671830985915506,6.599999999999994,4.678873239436655,11.300000000000072,16.204225352112584,5.099999999999973,12.976291079812267,6.776291079812243,12.121126760563307,6.208450704225527,12.900000000000034,18.743661971831017,0.6999999999999886,18.164788732394427,12.098356807511898,10.623708920187784,14.301291079812213,15.335211267605604,8.099999999999994,8.43521126760563,8.878873239436668,23.042253521126618,14.214084507042223,0.5999999999999943,0.7999999999999545,26.52887323943669,18.499999999999915,4.376291079812155,14.477582159624472,7.247417840375427,17.850000000000094,29.799999999999997,22.476291079812142,4.199999999999996,20.352112676056265,17.021126760563277,6.28591549295777,8.099999999999994,12.75633802816887,31.16478873239444,5.300000000000068,13.80000000000009,14.600000000000009,1.5237089201877154,16.66478873239444,39.23521126760568,14.007042253521107,15.048122065727835,10.67629107981211,8.70000000000001,15.235915492957815,6.135915492957793,11.999999999999936,6.1563380281688715,4.756338028168925,4.3352112676056045,5.400000000000006,12.200000000000017,6.9525821596244235,26.847417840375446,19.40000000000003,37.94553990610343,15.521126760563313,30.90000000000004,7.721126760563319,10.123708920187838,7.798708920187778,20.40704225352111,6.578873239436646,9.799999999999972,16.33591549295781,5.300000000000011,11.928873239436705,5.300000000000026,5.599999999999959,6.77887323943666,3.70000000000001,2.7230046948355415,9.499999999999911,11.20000000000001,12.956338028168986,2.752112676056356,20.487323943661863,16.48732394366207,6.399999999999917,2.3999999999999773,21.001291079812308,6.299999999999997,1.700000000000017,11.700000000000017,9.142253521126836,1.0000000000000036,8.435211267605553,4.900000000000006,11.26478873239446,6.587323943661858,3.299999999999983] # R201_100
@@ -37,35 +41,34 @@ print_pct_neg_arcs(pg)
 @info("ESPPRC $(solomon_dataset_name) testing...")
 print("Pulse     : "); @time pulse = solveESPPRC(pg, method="pulse")
 print("Mono      : "); @time mono0= solveESPPRC(pg, method="monodirectional")
-# print("Mono DSSR : "); @time mono1 = solveESPPRC(pg, method="monodirectional", DSSR=true)
-# print("Bi        : "); @time bidi0= solveESPPRC(pg, method="bidirectional")
-# print("Bi   DSSR : "); @time bidi1 = solveESPPRC(pg, method="bidirectional", DSSR=true)
+print("Mono DSSR : "); @time mono1 = solveESPPRC(pg, method="monodirectional", DSSR=true)
+print("Bi        : "); @time bidi0= solveESPPRC(pg, method="bidirectional")
+print("Bi   DSSR : "); @time bidi1 = solveESPPRC(pg, method="bidirectional", DSSR=true)
 
-
-# # show_details([101, 52, 69, 30, 71, 9, 51, 81, 79, 78, 34, 35, 54, 4, 74, 58, 102], pg) # R201_100 in jPulse
-# # show_details([101, 52, 7, 48, 47, 36, 63, 65, 34, 29, 3, 76, 50, 30, 31, 88, 18, 6, 87, 57, 41, 22, 75, 56, 74, 72, 54, 55, 25, 26, 102], pg) #R202_100
-# # show_details([101, 27, 69, 31, 62, 63, 64, 11, 19, 47, 36, 49, 46, 8, 84, 17, 91, 93, 37, 97, 13, 58, 102], pg) #R205_100
 
 @show pulse.cost, pulse.load, pulse.time
 @show mono0.cost, mono0.load, mono0.time
-# @show mono1.cost, mono1.load, mono1.time
-# @show bidi0.cost, bidi0.load, bidi0.time
-# @show bidi1.cost, bidi1.load, bidi1.time
+@show mono1.cost, mono1.load, mono1.time
+@show bidi0.cost, bidi0.load, bidi0.time
+@show bidi1.cost, bidi1.load, bidi1.time
 @show pulse.path
 @show mono0.path
-# @show mono1.path
-# @show bidi0.path
-# @show bidi1.path
+@show mono1.path
+@show bidi0.path
+@show bidi1.path
+
+# show_details(bidi0.path, pg)
 
 @testset "ESPPRC $(solomon_dataset_name) Test" begin
     @test isapprox(pulse.cost, mono0.cost, atol=1e-7)
-    # @test isapprox(mono0.cost, mono1.cost, atol=1e-7)
-    # @test isapprox(mono0.cost, mono1.cost, atol=1e-7)
-    # @test isapprox(pulse.cost, bidi0.cost, atol=1e-7)
-    # @test isapprox(bidi0.cost, bidi1.cost, atol=1e-7)
+    @test isapprox(mono0.cost, mono1.cost, atol=1e-7)
+    @test isapprox(pulse.cost, bidi0.cost, atol=1e-7)
+    @test isapprox(bidi0.cost, bidi1.cost, atol=1e-7)
 end
+@show rnd_seed
+println("done.")
 
-println("done")
+end
 
 
 ############################################################

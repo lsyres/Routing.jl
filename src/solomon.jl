@@ -171,7 +171,7 @@ function solomon_to_espprc(solomon::SolomonDataset, dual_var)
     # alpha = rand(0:20, n_nodes) * 2
     # cost_mtx = t - repeat(alpha, 1, n_nodes)
     # cost_mtx = t .* (rand(size(t)...) .- 0.25)
-    cost_mtx = t
+    cost_mtx = copy(t)
     for i in N
         for j in N
             # println("($i, $j): dist=$(cost_mtx[i,j]), dv=$(dual_var[i])")
