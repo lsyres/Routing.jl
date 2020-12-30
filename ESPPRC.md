@@ -31,7 +31,10 @@ This package implements the following algorithms:
 
 - The Pulse algorithm, as introduced in: [Leonardo Lozano, Daniel Duque, Andrés L. Medaglia (2016) An Exact Algorithm for the Elementary Shortest Path Problem with Resource Constraints. *Transportation Science* 50(1):348-357.](https://doi.org/10.1287/trsc.2014.0582)
 
-  - Callable by `solveESPPRC(problem::ESPPRC_Instance, method="pulse")`
+  - Callable by 
+  ```julia
+  solveESPPRC(problem::ESPPRC_Instance, method="pulse")
+  ```
 
 - A monodirectional dynamic programming method, as described in: [Feillet, D., Dejax, P., Gendreau, M., Gueguen, C., 2004. An exact algorithm for the elementary shortest path problem with resource constraints: Application to some vehicle routing problems. *Networks* 44, 216–229](https://onlinelibrary.wiley.com/doi/abs/10.1002/net.20033)
   - Callable by 
