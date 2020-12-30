@@ -1,4 +1,8 @@
+# Solving ESPPRC 
+# Modified from the example given by Google OR-Tools https://developers.google.com/optimization/routing/vrp
+
 import numpy as np
+from julia import Routing 
 
 # This example is modifed from the VRPTW example from OR-Tools
 # But ESPPRC can be used outside the VRP context
@@ -48,23 +52,23 @@ for i in range(n_nodes):
 
 # Time windows, for all nodes, including origin and destination
 time_windows = [
-    (0, 12), 
-    (0, 15), 
-    (16, 28),
-    (10, 13),
-    (0, 5),  
-    (5, 10), 
-    (0, 4),  
-    (5, 10), 
-    (0, 3),  
-    (10, 16),
-    (10, 15),
-    (0, 5),  
-    (5, 10), 
-    (7, 8),  
-    (10, 15),
-    (11, 15),
-    (0, 35),
+    (0, 12),    #  0
+    (0, 15),    #  1
+    (16, 28),   #  2
+    (10, 13),   #  3
+    (0, 5),     #  4
+    (5, 10),    #  5
+    (0, 4),     #  6
+    (5, 10),    #  7
+    (0, 3),     #  8
+    (10, 16),   #  9
+    (10, 15),   # 10
+    (0, 5),     # 11
+    (5, 10),    # 12
+    (7, 8),     # 13
+    (10, 15),   # 14
+    (11, 15),   # 15
+    (0, 35),    # 16
 ]
 # If early_time is set for the origin, it means the earliest possible departure time.
 early_time = [time_windows[i][0] for i in range(n_nodes)]
@@ -82,8 +86,6 @@ service_time = np.zeros(n_nodes)
 origin, destination = 5, 2
 origin, destination = origin + 1, destination + 1
 
-from julia import Routing 
-
 pg = Routing.ESPPRC_Instance(
     origin,
     destination,
@@ -96,10 +98,11 @@ pg = Routing.ESPPRC_Instance(
     service_time
 )
 
+# Solve the ESPPRC 
 solution_label = Routing.solveESPPRC(pg)
 
 # IMPORTANT: Again, you should subtract 1 to the indices in `path`. 
 print(solution_label.path - 1)
-print(solution_label.time)
 print(solution_label.cost)
+print(solution_label.time)
 print(solution_label.load)
