@@ -11,7 +11,7 @@ This package implements a branch-and-price algorithm for solving Vehicle Routing
 ## Installation
 
 ```julia
-] add https://github.com/chkwon/VRPTW.jl
+] add https://github.com/chkwon/Routing.jl
 ```
 
 
