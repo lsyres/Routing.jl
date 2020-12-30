@@ -122,15 +122,15 @@ function backward_reach(λ_i::Label, v_i::Int, v_k::Int, pg::ESPPRC_Instance)
     end
 
     # Currently at v_i 
-    # extending arc: (v_k, v_i)
+    # extending arc, backward: (v_k, v_i)
 
-    a_bw_k = pg.early_time[v_k] + pg.service_time[v_k]
-    b_bw_k = pg.late_time[v_k] .+ pg.service_time[v_k]
+    a_k = pg.early_time[v_k] + pg.service_time[v_k]
+    b_k = pg.late_time[v_k] .+ pg.service_time[v_k]
 
     # Check time 
     max_T = pg.max_T
-    min_time_required = max(pg.time[v_k, v_i] + pg.service_time[v_i] + λ_i.time, max_T - b_bw_k)
-    if min_time_required > max_T - a_bw_k
+    new_time = max(λ_i.time + pg.service_time[v_i] + pg.time[v_k, v_i], max_T - b_k)
+    if new_time > max_T - a_k
         return false, NaN, NaN
     end
 
@@ -140,8 +140,7 @@ function backward_reach(λ_i::Label, v_i::Int, v_k::Int, pg::ESPPRC_Instance)
         return false, NaN, NaN
     end
 
-    # @show is_reachable, v_k, λ_i.path, min_time_required
-    return true, min_time_required, new_load
+    return true, new_time, new_load
 end
 
 function calculate_max_T(pg::ESPPRC_Instance)
@@ -156,11 +155,18 @@ function calculate_max_T(pg::ESPPRC_Instance)
 end
 
 
-function calculate_path_time(path::Vector{Int}, pg::ESPPRC_Instance)
+function calculate_path_time(path::Vector{Int}, pg::ESPPRC_Instance; check_feasible=false)
     total_time = 0
     for k in 1:length(path)-1
         i, j = path[k], path[k+1]
         total_time = max(total_time + pg.service_time[i] + pg.time[i, j], pg.early_time[j])
+        if check_feasible
+            if total_time > pg.late_time[j] 
+                @warn("This path is infeasible at node $j.")
+                show_details(path, pg)
+                readline()
+            end
+        end
     end
     return total_time
 end

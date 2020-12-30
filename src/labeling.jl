@@ -144,7 +144,6 @@ function backward_extend(λ_i::Label, v_i::Int, v_k::Int, pg::ESPPRC_Instance)
     end
     new_cost = pg.cost[v_k, v_i] + λ_i.cost
     new_path = copy(λ_i.path)
-    # pushfirst!(new_path, v_k)
     push!(new_path, v_k)
 
     global counter += 1
@@ -179,7 +178,7 @@ function join_labels!(final_labels::Vector{Label}, λ_i::Label, λ_j::Label, pg:
 
     # Check no cycle
     new_flag = λ_i.flag .+ λ_j.flag
-    for i in 1:length(new_flag)
+    for i in pg.critical_nodes
         if new_flag[i] > 1
             return Inf
         end
@@ -198,7 +197,7 @@ function join_labels!(final_labels::Vector{Label}, λ_i::Label, λ_j::Label, pg:
     new_path = copy(λ_i.path)
     append!(new_path, reverse(λ_j.path))
     new_cost = λ_i.cost + pg.cost[v_i, v_j] + λ_j.cost
-    new_time = calculate_path_time(new_path, pg)
+    new_time = calculate_path_time(new_path, pg, check_feasible=true)
 
     new_label = Label(new_time, new_load, new_flag, new_cost, new_path)
     update_flag!(new_label, pg, direction="join")
