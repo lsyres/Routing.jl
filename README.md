@@ -17,4 +17,4 @@ This package implements a branch-and-price algorithm for solving Vehicle Routing
 ## Usage
 
 - [Vehicle Routing Problems with Time Windows (VRPTW)](VRPTW.md)
-- [Elementary Shortest Path Problems with Resource Constraints (ESPPRC)](ESPPRC).md
+- [Elementary Shortest Path Problems with Resource Constraints (ESPPRC)](ESPPRC.md)
