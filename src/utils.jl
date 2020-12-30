@@ -173,7 +173,7 @@ function calculate_path_time(path::Vector{Int}, pg::ESPPRC_Instance; check_feasi
         total_time = max(total_time + pg.service_time[i] + pg.time[i, j], pg.early_time[j])
         if check_feasible
             if total_time > pg.late_time[j] 
-                @warn("This path is infeasible at node $j.")
+                @warn("This path is infeasible at node $j: arrival_time=$(total_time) > $(pg.late_time[j])")
                 show_details(path, pg)
                 readline()
             end

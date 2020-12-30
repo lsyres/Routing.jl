@@ -5,8 +5,8 @@ using Test
 # For testing purpose
 using Random
 
-Random.seed!(3232) # bug instance
-solomon_dataset_name = "R101_100"
+# Random.seed!(3232) # bug instance
+solomon_dataset_name = "R102_100"
 solomon = load_solomon(solomon_dataset_name)
 n_customers = length(solomon.nodes) - 1
 dual_var = rand(0:20, n_customers)
@@ -53,7 +53,7 @@ print("Bi   DSSR : "); @time bidi1 = solveESPPRC(pg, method="bidirectional", DSS
 @show bidi0.path
 @show bidi1.path
 
-show_details(bidi0.path, pg)
+# show_details(bidi0.path, pg)
 
 @testset "ESPPRC $(solomon_dataset_name) Test" begin
     @test isapprox(pulse.cost, mono0.cost, atol=1e-7)

@@ -178,11 +178,15 @@ function join_labels!(final_labels::Vector{Label}, λ_i::Label, λ_j::Label, pg:
 
     # Check no cycle
     new_flag = λ_i.flag .+ λ_j.flag
-    for i in pg.critical_nodes
-        if new_flag[i] > 1
-            return Inf
-        end
+    # for i in pg.critical_nodes
+    #     if new_flag[i] > 1
+    #         return Inf
+    #     end
+    # end
+    if !isempty(intersect(λ_i.path, λ_j.path, pg.critical_nodes))
+        return Inf 
     end
+    
     # Check capacity
     new_load = λ_i.load + pg.load[v_i, v_j] + λ_j.load
     if new_load > pg.capacity
