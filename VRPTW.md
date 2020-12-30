@@ -62,7 +62,7 @@ This format is consistent with the format used by [VRP-REP.org](http://www.vrp-r
 
 - [Solomon, M.M., 1987. Algorithms for the vehicle routing and scheduling problems with time window constraints. Operations research, 35(2), pp.254-265.](https://doi.org/10.1287/opre.35.2.254)
 
-One important difference is that the node id for the depot is the largest among all nodes, instead of 0. The node id numbering begins with 1.
+**One important difference is that the node id for the depot is the largest among all nodes, instead of 0. The node id numbering begins with 1. For example, if there are 25 customer request nodes, then the depot id is 26. Later the algorithm will add a dummy depot node, with id 27. **
 
 For an example of loading and solving the Solomon instances, see [test/solve_solomon_vrptw.jl](https://github.com/chkwon/VRPTW.jl/blob/master/test/solve_solomon_vrptw.jl) 
 
@@ -94,6 +94,6 @@ Currently, this package implements a Branch-and-Price algorithm. The subproblem 
 
 * Price
   - [x] ESPPRC by Pulse Algorithm
-  - [x] ESPPRC by labeling (monodirectional, bidirectional) algorithm
+  - [x] ESPPRC by labeling algorithm
   - [x] First 400 columns with negative reduced costs were added. 
   - [ ] Approximate methods? 
