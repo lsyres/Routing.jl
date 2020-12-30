@@ -4,7 +4,7 @@
 
 This problem seeks to find an elementary path (without cycles) to minimize the total costs considering two resources: load and time. The total load must be less than or equals to the vehicle capacity, and the arrival time in each node must be no later than the latest arrival time. If the vehicle arrives earlier than the earliest arrival time, then the vehicle should wait.
 
-While ESPPRC is used mostly in the VRP context, it is also useful in some other applications; for example, for finding the most risky path with a travel time threshold, as in [A. Bogyrbayeva*, C. Kwon. Pessimistic Evasive Flow Capturing Problems. European Journal of Operational Research, to appear.](https://www.chkwon.net/papers/bogyrbayeva_pessimistic.pdf)
+While ESPPRC is used mostly in the VRP context, it is also useful in some other applications; for example, for finding the most risky path with a travel time threshold, as in [Bogyrbayeva and Kwon (2021)](https://doi.org/10.1016/j.ejor.2020.12.001).
 
 ### ESPPRC Input 
 
@@ -29,16 +29,15 @@ See this example for details: [`examples/espprc_example.jl`](https://github.com/
 
 This package implements the following algorithms:
 
-- The Pulse algorithm, as introduced in: [Leonardo Lozano, Daniel Duque, Andrés L. Medaglia (2016) An Exact Algorithm for the Elementary Shortest Path Problem with Resource Constraints. Transportation Science 50(1):348-357.](https://doi.org/10.1287/trsc.2014.0582)
+- The Pulse algorithm, as introduced in: [Leonardo Lozano, Daniel Duque, Andrés L. Medaglia (2016) An Exact Algorithm for the Elementary Shortest Path Problem with Resource Constraints. *Transportation Science* 50(1):348-357.](https://doi.org/10.1287/trsc.2014.0582)
 
   - Callable by `solveESPPRC(problem::ESPPRC_Instance, method="pulse")`
-  - If you need a faster c++ implementation for this algorithm, I recommend https://github.com/DouYishun/vrp-espprc.
 
-- A monodirectional dynamic programming method, as described in: [Feillet, D., Dejax, P., Gendreau, M., Gueguen, C., 2004. An exact algorithm for the elementary shortest path problem with resource constraints: Application to some vehicle routing problems. Networks 44, 216–229](https://onlinelibrary.wiley.com/doi/abs/10.1002/net.20033)
+- A monodirectional dynamic programming method, as described in: [Feillet, D., Dejax, P., Gendreau, M., Gueguen, C., 2004. An exact algorithm for the elementary shortest path problem with resource constraints: Application to some vehicle routing problems. *Networks* 44, 216–229](https://onlinelibrary.wiley.com/doi/abs/10.1002/net.20033)
   - Callable by `solveESPPRC(problem::ESPPRC_Instance, method="monodirectional")`
-  - Currently, the reachability concept is not implemented.
+  - The decremental state-space relaxation (DSSR) version as proposed by [Righini and Salani (2008)](https://doi.org/10.1002/net.20212) is callable by `solveESPPRC(problem::ESPPRC_Instance, method="monodirectional, DSSR=true")`.  
 
-- (work in progress, not working properly yet) A bidirectional dynamic programming method: [Righini, G., Salani, M., 2006. Symmetry helps: Bounded bi-directional dynamic programming for the elementary shortest path problem with resource constraints. Discrete Optimization 3, 255–273.](https://doi.org/10.1016/j.disopt.2006.05.007)
+- (work in progress, not working properly yet) A bidirectional dynamic programming method: [Righini, G., Salani, M., 2006. Symmetry helps: Bounded bi-directional dynamic programming for the elementary shortest path problem with resource constraints. *Discrete Optimization* 3, 255–273.](https://doi.org/10.1016/j.disopt.2006.05.007)
   - Callable by `solveESPPRC(problem::ESPPRC_Instance, method="bidirectional")`
 
 
