@@ -320,6 +320,30 @@ function find_cycle_nodes(path::Vector{Int}, n_nodes::Int)
     return cycle_nodes
 end
 
+function hascycle(path::Vector{Int})
+    visit_count = zeros(Int, maximum(path))
+    for i in path 
+        visit_count[i] += 1 
+    end
+    has_cycle = !isnothing(findfirst(x->x>1, visit_count))
+    return has_cycle
+end
+
+function remove_labels_with_cycle!(Λ::Vector{Vector{Label}}, pg::ESPPRC_Instance)
+    n_nodes = length(pg.service_time)
+    for v_j in 1:n_nodes 
+        n = 1
+        while n <= length(Λ[v_j])
+            label = Λ[v_j][n]
+            if hascycle(label.path)
+                deleteat!(Λ[v_j], n)
+            else
+                n += 1
+            end
+        end
+    end
+end
+
 function monodirectional(org_pg::ESPPRC_Instance; max_neg_routes=MAX_INT::Int, DSSR=false)
     # Feillet, D., Dejax, P., Gendreau, M., Gueguen, C., 2004. An exact algorithm for the elementary shortest path problem with resource constraints: Application to some vehicle routing problems. Networks 44, 216–229. https://doi.org/10.1002/net.20033
 
@@ -341,7 +365,7 @@ function monodirectional(org_pg::ESPPRC_Instance; max_neg_routes=MAX_INT::Int, D
     final_labels = Label[]
     best_label = nothing
     has_cycle = true
-    CN_iter = 1
+    DSSR_iter = 1
     global counter = 0
 
 
@@ -389,14 +413,14 @@ function monodirectional(org_pg::ESPPRC_Instance; max_neg_routes=MAX_INT::Int, D
         else
             # @show cycle_nodes
             union!(pg.critical_nodes, cycle_nodes)
-            CN_iter += 1
+            DSSR_iter += 1
         end
     end
     # @show size(final_labels)
 
-    # @show CN_iter
-
-
+    if DSSR 
+        @show DSSR_iter
+    end
 
     return prepare_return_values!(final_labels, max_neg_routes)
 
@@ -492,11 +516,13 @@ function bidirectional(org_pg::ESPPRC_Instance; max_neg_routes=MAX_INT::Int, DSS
 
         else
             union!(pg.critical_nodes, cycle_nodes)
-            CN_iter += 1
+            DSSR_iter += 1
         end
     end
 
-    # @show CN_iter
+    if DSSR 
+        @show DSSR_iter
+    end
 
     # @show count_fw_labels, count_bw_labels, size(final_labels)
     return prepare_return_values!(final_labels, max_neg_routes)
