@@ -144,13 +144,24 @@ function backward_reach(λ_i::Label, v_i::Int, v_k::Int, pg::ESPPRC_Instance)
 end
 
 function calculate_max_T(pg::ESPPRC_Instance)
-    n_nodes = length(pg.early_time)
+    # n_nodes = length(pg.early_time)
+    # set_N = 1:n_nodes
+    # tmp = [
+    #     pg.late_time[i] + pg.service_time[i] + pg.time[i, pg.destination] 
+    #     for i in set_N if pg.time[i, pg.destination] < Inf
+    # ]
+    # max_T = min(maximum(tmp), pg.late_time[pg.destination])
+    # return max_T
+    calculate_max_T(pg. destination, pg.time, pg.early_time, pg.late_time, pg.service_time)
+end
+function calculate_max_T(destination, time, early_time, late_time, service_time)
+    n_nodes = length(early_time)
     set_N = 1:n_nodes
     tmp = [
-        pg.late_time[i] + pg.service_time[i] + pg.time[i, pg.destination] 
-        for i in set_N if pg.time[i, pg.destination] < Inf
+        late_time[i] + service_time[i] + time[i, pg.destination] 
+        for i in set_N if time[i, destination] < Inf
     ]
-    max_T = min(maximum(tmp), pg.late_time[pg.destination])
+    max_T = min(maximum(tmp), late_time[destination])
     return max_T
 end
 

@@ -218,7 +218,7 @@ function forward_search!(v_i::Int, Λ_fw::Vector{Vector{Label}}, set_E::Vector{I
     max_T = pg.max_T :: Float64
     # Forward Extension
     for λ_i in Λ_fw[v_i]
-        if λ_i.time <= (1/2) * max_T
+        if λ_i.time <= 0.5 * max_T
             for v_j in successors(v_i, pg)
                 if λ_i.flag[v_j] == 0 || !in(v_j, pg.critical_nodes)
                     label = forward_extend(λ_i, v_i, v_j, pg)
@@ -241,7 +241,7 @@ end
 function backward_search!(v_i::Int, Λ_bw::Vector{Vector{Label}}, set_E::Vector{Int}, pg::ESPPRC_Instance)
     max_T = pg.max_T :: Float64
     for λ_i in Λ_bw[v_i]
-        if λ_i.time <= (1/2) * max_T
+        if λ_i.time <= 0.5 * max_T
             for v_k in predecessors(v_i, pg)
                 if λ_i.flag[v_k] == 0 || !in(v_k, pg.critical_nodes)
                     label = backward_extend(λ_i, v_i, v_k, pg)

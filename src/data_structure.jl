@@ -45,7 +45,7 @@ function ESPPRC_Instance(origin, destination, capacity, cost, time, load, early_
     fs = save_forward_star(n_nodes, destination, cost; sorted=true)
     rs = save_reverse_star(n_nodes, origin, cost; sorted=true)
     critical_nodes = Set(1:n_nodes)
-    max_T = Inf
+    max_T = calculate_max_T(destination, time, early_time, late_time, service_time)
     max_neg_routes = MAX_INT
     return ESPPRC_Instance(origin, destination, capacity, cost, time, load, early_time, late_time, service_time, 
                             fs, rs, critical_nodes, max_T, max_neg_routes)

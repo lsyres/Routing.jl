@@ -8,7 +8,7 @@ using Random
 Random.seed!(3232) # bug instance
 solomon_dataset_name = "R101_100"
 solomon = load_solomon(solomon_dataset_name)
-n_customers = solomon.nodes |> length
+n_customers = length(solomon.nodes) - 1
 dual_var = rand(0:20, n_customers)
 
 # Random.seed!(0)
@@ -16,7 +16,7 @@ dual_var = rand(0:20, n_customers)
 # For Debugging
 include("debugging.jl")
 
-# solomon_dataset_name = "C102_025"
+# solomon_dataset_name = "C102_050"
 # solomon = load_solomon(solomon_dataset_name)
 # n_customers = length(solomon.nodes) - 1
 # dual_var = rand(0:20, n_customers)
@@ -42,10 +42,6 @@ print("Bi        : "); @time bidi0= solveESPPRC(pg, method="bidirectional")
 print("Bi   DSSR : "); @time bidi1 = solveESPPRC(pg, method="bidirectional", DSSR=true)
 
 
-# # show_details([101, 52, 69, 30, 71, 9, 51, 81, 79, 78, 34, 35, 54, 4, 74, 58, 102], pg) # R201_100 in jPulse
-# # show_details([101, 52, 7, 48, 47, 36, 63, 65, 34, 29, 3, 76, 50, 30, 31, 88, 18, 6, 87, 57, 41, 22, 75, 56, 74, 72, 54, 55, 25, 26, 102], pg) #R202_100
-# # show_details([101, 27, 69, 31, 62, 63, 64, 11, 19, 47, 36, 49, 46, 8, 84, 17, 91, 93, 37, 97, 13, 58, 102], pg) #R205_100
-
 @show pulse.cost, pulse.load, pulse.time
 @show mono0.cost, mono0.load, mono0.time
 @show mono1.cost, mono1.load, mono1.time
@@ -56,6 +52,8 @@ print("Bi   DSSR : "); @time bidi1 = solveESPPRC(pg, method="bidirectional", DSS
 @show mono1.path
 @show bidi0.path
 @show bidi1.path
+
+show_details(bidi0.path, pg)
 
 @testset "ESPPRC $(solomon_dataset_name) Test" begin
     @test isapprox(pulse.cost, mono0.cost, atol=1e-7)
