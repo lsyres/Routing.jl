@@ -1,8 +1,8 @@
 # Solving VRPTW 
 # The example given by Google OR-Tools https://developers.google.com/optimization/routing/vrp
 
-using VRPTW
-# include("../src/VRPTWinclude.jl")
+using Routing
+# include("../src/Routing_include.jl")
 
 using Test 
 
@@ -85,7 +85,7 @@ vrptw = VRPTW_Instance(
 )
 
 # solve
-@time routes, total_distance = solve_vrp_bnb(vrptw, pricing_method="pulse")
+@time routes, total_distance = solveVRP(vrptw, pricing_method="pulse")
 
 @show total_distance
 @show routes

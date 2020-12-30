@@ -1,4 +1,4 @@
-name = "VRPTW"
+name = "Routing"
 uuid = "8785b77d-c82c-4bf6-9b42-dddedd117a0f"
 authors = ["Changhyun Kwon <chkwon@gmail.com> and contributors"]
 version = "0.1.0"

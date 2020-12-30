@@ -1,5 +1,5 @@
-# using VRPTW
-include("../src/VRPTWinclude.jl")
+# using Routing
+include("../src/Routing_include.jl")
 
 # To plot
 using PyPlot
@@ -40,7 +40,7 @@ solomon = load_solomon(solomon_dataset_name)
 vrptw = generate_solomon_vrptw_instance(solomon)
 
 start_time = time()
-@time routes, obj_val = solve_vrp_bnb(vrptw, pricing_method="monodirectional");
+@time routes, obj_val = solveVRP(vrptw, pricing_method="monodirectional");
 end_time = time()
 duration = end_time - start_time
 

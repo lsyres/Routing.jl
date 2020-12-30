@@ -1,5 +1,5 @@
-# using VRPTW
-include("../src/VRPTWinclude.jl")
+# using Routing
+include("../src/Routing_include.jl")
 using Test
 using DataStructures
 
@@ -71,7 +71,7 @@ for (name, val) in solomon_dataset
     @testset "$name" begin
         println("-- Solomon Instance $name --")
         start_time = time()
-        @time routes, obj_val = solve_vrp_bnb(vrptw)
+        @time routes, obj_val = solveVRP(vrptw)
         comp_time[name] = time() - start_time
         @show obj_val
         @test isapprox(obj_val, val, atol=1e-7)

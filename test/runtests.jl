@@ -1,4 +1,4 @@
-using VRPTW
+using Routing
 using Test
 
 include("debugging.jl")
@@ -28,7 +28,7 @@ include("espprc_example.jl")
 
             @testset "$name" begin
                 println("-- Solomon Instance $name --")
-                @time routes, objective_value = solve_vrp_bnb(vrptw, pricing_method="pulse");
+                @time routes, objective_value = solveVRP(vrptw, pricing_method="pulse");
                 @test isapprox(objective_value, val, atol=1e-7)
             end
         end

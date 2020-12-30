@@ -237,7 +237,7 @@ function complete_BnB!(best_sol, vrptw, root_y, root_routes, root_obj; pricing_m
 
 end
 
-function solve_vrp_bnb(vrptw::VRPTW_Instance; tw_reduce=true, pricing_method="pulse")
+function solveVRP(vrptw::VRPTW_Instance; tw_reduce=true, pricing_method="pulse")
     println("Pricing method = $pricing_method")
 
     start_time = time()
