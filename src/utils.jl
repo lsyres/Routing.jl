@@ -224,7 +224,7 @@ function show_details(path, pg::ESPPRC_Instance)
         arr_time = max(arr_time + pg.service_time[i] + pg.time[i,j], pg.early_time[j]) |> deci3
         load += pg.load[i,j] |> deci1
         cost += pg.cost[i,j] |> deci3
-        println("At node $j: time=$(deci3(arr_time)), load=$(deci1(load)), cost=$(deci3(cost))")
+        println("At node $j: time=$(deci3(arr_time)), load=$(deci1(load)), cost=$(deci3(cost)), arc_cost=$(pg.cost[i,j])")
         if arr_time > pg.late_time[j]
             @info("Time window constraint is violated at node $j: $(arr_time) > $(pg.late_time[j])")
         end

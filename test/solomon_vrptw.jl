@@ -49,3 +49,7 @@ duration = end_time - start_time
 
 plot_solomon_solution(solomon, routes, obj_val, duration)
 @show solomon_dataset_name, obj_val, duration
+
+
+include("solomon_exact.jl")
+solomon_exact(vrptw)

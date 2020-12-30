@@ -4,10 +4,11 @@
 
 # Main ESPPRC function
 function solveESPPRC(org_pg::ESPPRC_Instance; method="pulse", DSSR=false)
+
     if method == "pulse"
         best_label, _ = solveESPPRCpulse(org_pg)
     elseif method == "monodirectional"
-        best_label, _ = monodirectional(org_pg)
+        best_label, _ = monodirectional(org_pg; DSSR=DSSR)
     elseif method == "bidirectional"
         best_label, _ = bidirectional(org_pg; DSSR=DSSR)
     else 
@@ -18,6 +19,12 @@ function solveESPPRC(org_pg::ESPPRC_Instance; method="pulse", DSSR=false)
 end
 
 function solveESPPRC_vrp(org_pg::ESPPRC_Instance; max_neg_routes=MAX_INT, method="pulse", DSSR=false)
+
+    if DSSR == true && max_neg_routes < MAX_INT
+        @warn("DSSR option cannot be used with max_neg_routes. Non-DSSR algorithm is used.")
+        DSSR = false
+    end
+
     if method == "pulse"
         return solveESPPRCpulse(org_pg; max_neg_routes=max_neg_routes)
     elseif method == "monodirectional"

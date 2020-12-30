@@ -5,23 +5,6 @@ using VRPTW
 using Test 
 using Random
 
-# For Debugging
-# include("debugging.jl")
-
-
-# We need to construct a ESPPRC_Instance instance
-# mutable struct ESPPRC_Instance
-#     origin      :: Int64
-#     destination :: Int64
-#     capacity    :: Float64
-#     cost        :: Matrix{Float64}
-#     time        :: Matrix{Float64}
-#     load        :: Matrix{Float64}
-#     early_time  :: Vector{Float64}
-#     late_time   :: Vector{Float64}
-#     service_time:: Vector{Float64}
-# end
-
 # This example is modifed from the VRPTW example from OR-Tools
 # But ESPPRC can be used outside the VRP context
 # This example describes non-VRP context
@@ -103,7 +86,7 @@ origin, destination = 6, 3
 # service_time is just set to all zeros in this example
 service_time = zeros(n_nodes)
 
-ei = ESPPRC_Instance(
+pg = ESPPRC_Instance(
     origin,
     destination,
     capacity,
@@ -116,22 +99,64 @@ ei = ESPPRC_Instance(
 )
 
 
-@info("Testing for OD=($(ei.origin), $(ei.destination))")
+@info("Testing for OD=($(pg.origin), $(pg.destination))")
 
-# Three different algorithms for ESPPRC 
-@time sol = solveESPPRC(ei, method="pulse")
-@time lab1 = solveESPPRC(ei, method="monodirectional")
-@time lab2 = solveESPPRC(ei, method="bidirectional")
+print("Pulse     : "); @time pulse = solveESPPRC(pg, method="pulse")
+print("Mono      : "); @time mono0= solveESPPRC(pg, method="monodirectional")
+print("Mono DSSR : "); @time mono1 = solveESPPRC(pg, method="monodirectional", DSSR=true)
+# print("Bi        : "); @time bidi0= solveESPPRC(pg, method="bidirectional")
+# print("Bi   DSSR : "); @time bidi1 = solveESPPRC(pg, method="bidirectional", DSSR=true)
 
-@show sol.cost, sol.load, sol.time, sol.path
-@show lab1.cost, lab1.load, lab1.time, lab1.path
-@show lab2.cost, lab2.load, lab2.time, lab2.path
-    
-show_details(sol.path, ei)
-show_details(lab1.path, ei)
-show_details(lab2.path, ei)
+@show pulse.cost, pulse.load, pulse.time
+@show mono0.cost, mono0.load, mono0.time
+@show mono1.cost, mono1.load, mono1.time
+# @show bidi0.cost, bidi0.load, bidi0.time
+# @show bidi1.cost, bidi1.load, bidi1.time
+@show pulse.path
+@show mono0.path
+@show mono1.path
+# @show bidi0.path
+# @show bidi1.path
 
-@testset "ESPPRC-Labeling-Simple" begin
-    @test sol.path == lab1.path 
-    @test lab1.path == lab2.path 
+@testset "ESPPRC Example Test" begin
+    @test isapprox(pulse.cost, mono0.cost, atol=1e-7)
+    @test isapprox(mono0.cost, mono1.cost, atol=1e-7)
+    # @test isapprox(pulse.cost, bidi0.cost, atol=1e-7)
+    # @test isapprox(bidi0.cost, bidi1.cost, atol=1e-7)
+end
+
+
+
+# negative cost route return test 
+max_neg = 10
+@info("ESPPRC Example testing with max_neg_routes=$(max_neg)...")
+
+@time pulse, neg_pulse = solveESPPRC_vrp(pg, method="pulse", max_neg_routes=max_neg)
+@time mono0, neg_mono0 = solveESPPRC_vrp(pg, method="monodirectional", max_neg_routes=max_neg)
+@time mono1, neg_mono1 = solveESPPRC_vrp(pg, method="monodirectional", max_neg_routes=max_neg, DSSR=true)
+
+@show typeof(pulse), typeof(neg_pulse), length(neg_pulse)
+@show pulse 
+@show mono0
+@show mono1
+
+@testset "ESPPRC Example Test with max_neg_routes" begin
+    @test length(neg_pulse) <= max_neg
+    @test length(neg_mono0) <= max_neg
+    @test length(neg_mono1) <= max_neg
+    for l in neg_pulse
+        @test l.cost < 0.0
+        @test l.path[1] == pg.origin        
+        @test l.path[end] == pg.destination
+    end
+    for l in neg_mono0
+        @test l.cost < 0.0
+        @test l.path[1] == pg.origin        
+        @test l.path[end] == pg.destination        
+    end
+    for l in neg_mono1
+        @test l.cost < 0.0
+        @test l.path[1] == pg.origin        
+        @test l.path[end] == pg.destination        
+    end
 end

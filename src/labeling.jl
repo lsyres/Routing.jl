@@ -1,7 +1,7 @@
 
-function show_label(label::Label)
-    println("time=$(label.time), load=$(label.load), cost=$(label.cost), path=$(label.path)")
-end
+# function show_label(label::Label)
+#     println("time=$(label.time), load=$(label.load), cost=$(label.cost), path=$(label.path)")
+# end
 
 function is_identical(label::Label, other_label::Label)
     if label.cost != other_label.cost
@@ -29,18 +29,12 @@ end
 
 function dominate(label::Label, other_label::Label, pg::ESPPRC_Instance)
     # Check if label dominates other_label
-    # CN = collect(pg.critical_nodes) :: Vector{Int}
-
     if label.cost > other_label.cost
         return false
     elseif label.time > other_label.time
         return false
     elseif label.load > other_label.load
         return false
-    # elseif sum(label.flag[CN]) > sum(label.flag[CN])
-    # elseif all(label.flag[CN] .>= other_label.flag[CN])
-    # elseif any(label.flag[CN] .> other_label.flag[CN])
-        # return false
     else
         for i in pg.critical_nodes
             if label.flag[i] > other_label.flag[i]
@@ -48,9 +42,7 @@ function dominate(label::Label, other_label::Label, pg::ESPPRC_Instance)
             end
         end
     end
-
     return true
-
 end
 
 function update_flag!(label::Label, pg::ESPPRC_Instance; direction="backward")
@@ -327,6 +319,7 @@ end
 
 function monodirectional(org_pg::ESPPRC_Instance; max_neg_routes=MAX_INT::Int, DSSR=false)
     # Feillet, D., Dejax, P., Gendreau, M., Gueguen, C., 2004. An exact algorithm for the elementary shortest path problem with resource constraints: Application to some vehicle routing problems. Networks 44, 216–229. https://doi.org/10.1002/net.20033
+
     pg = deepcopy(org_pg)
     graph_reduction!(pg)
     pg.max_neg_routes = max_neg_routes

@@ -8,9 +8,9 @@ distance(n1::Node, n2::Node) = sqrt((n1.cx - n2.cx)^2 + (n1.cy - n2.cy)^2)
 
 function calculate_solomon_cost(node::Array{Node})
     n_nodes = length(node)
-    cost = Matrix{Float64}(undef, n_nodes, n_nodes)
+    cost = zeros(n_nodes, n_nodes)
     for i in 1:n_nodes-1
-        cost[i, i] = Inf
+        # cost[i, i] = Inf # This setup will break some solomon instances. Set to zero is necessary.
         for j in i+1:n_nodes
             c = distance(node[i], node[j])
             c = floor(10 * c) / 10 
@@ -100,12 +100,11 @@ function generate_solomon_vrptw_instance(solomon::SolomonDataset)
     fleet = solomon.fleet
     requests = solomon.requests
 
-    n_nodes = length(nodes)
     n_vehicles = fleet.number
     n_customers = length(requests)
 
     # Add a dummy node for depot at the end
-    push!(nodes, nodes[n_nodes])
+    push!(nodes, nodes[end])
     depot0 = n_customers + 1
     depot_dummy = n_customers + 2
     cost = calculate_solomon_cost(nodes)
@@ -135,7 +134,7 @@ function generate_solomon_vrptw_instance(solomon::SolomonDataset)
         fleet.max_travel_time
     )
 
-    return return vrptw_inst
+    return vrptw_inst
 end
 
 function solomon_to_espprc(solomon::SolomonDataset, dual_var)

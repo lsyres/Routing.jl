@@ -191,21 +191,23 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-
         )
 
         t1 = time()
-        best_p, all_negative_reduced_cost_paths = solveESPPRC_vrp(pg, max_neg_routes=400, method=pricing_method)        
+        best_p, neg_cost_routes = solveESPPRC_vrp(pg, max_neg_routes=20, method=pricing_method)        
         t2 = time()
 
-        if iter == 1 || iter % 10 == 0 || abs(best_p.cost) < 1e-6
-            pricing_time = string(round((t2-t1)*1000)/1000) * " s" 
-            best_reduced_cost = round((best_p.cost)*1000)/1000
-            n_neg_cost_paths = length(all_negative_reduced_cost_paths)
-            @show iter, best_reduced_cost, n_neg_cost_paths, pricing_time
-        end
+        # @show best_p.cost, length(neg_cost_routes)
+
+        # if iter == 1 || iter % 10 == 0 || abs(best_p.cost) < 1e-6
+        #     pricing_time = string(round((t2-t1)*1000)/1000) * " s" 
+        #     best_reduced_cost = round((best_p.cost)*1000)/1000
+        #     n_neg_cost_paths = length(all_negative_reduced_cost_paths)
+        #     @show iter, best_reduced_cost, n_neg_cost_paths, pricing_time
+        # end
 
         added_path_counter = 0
 
-        if !isempty(all_negative_reduced_cost_paths)
+        if !isempty(neg_cost_routes)
             is_new_route_generated = false
-            for neg_p in all_negative_reduced_cost_paths
+            for neg_p in neg_cost_routes
                 if ! in(neg_p.path, routes) 
                     added_path_counter += 1
                     # @assert neg_p.cost < 0 
@@ -242,7 +244,7 @@ function solve_cg_rmp(vrptw::VRPTW_Instance; initial_routes=[], veh_cond=("<=",-
     end
 
 
-    println("-- Total columns = $(length(sol_routes))")
+    # println("-- Total columns = $(length(sol_routes))")
     sol_y = Array{Float64}(sol_y)
 
     return sol_y, sol_routes, sol_obj
