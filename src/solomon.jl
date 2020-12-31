@@ -6,14 +6,15 @@ to_float(x::String) = parse(Float64, x)
 
 distance(n1::Node, n2::Node) = sqrt((n1.cx - n2.cx)^2 + (n1.cy - n2.cy)^2)
 
-function calculate_solomon_cost(node::Array{Node})
+function calculate_solomon_cost(node::Array{Node}; digits=1)
     n_nodes = length(node)
     cost = zeros(n_nodes, n_nodes)
     for i in 1:n_nodes-1
         # cost[i, i] = Inf # This setup will break some solomon instances. Set to zero is necessary.
         for j in i+1:n_nodes
             c = distance(node[i], node[j])
-            c = floor(10 * c) / 10 
+            factor = 10^digits
+            c = floor(factor * c) / factor 
             cost[i,j] = c
             cost[j,i] = c
         end
@@ -95,7 +96,7 @@ function load_solomon(dataset_name::String)
     return solomon
 end
 
-function generate_solomon_vrptw_instance(solomon::SolomonDataset)
+function generate_solomon_vrptw_instance(solomon::SolomonDataset; digits=1)
     nodes = solomon.nodes 
     fleet = solomon.fleet
     requests = solomon.requests
@@ -107,7 +108,7 @@ function generate_solomon_vrptw_instance(solomon::SolomonDataset)
     push!(nodes, nodes[end])
     depot0 = n_customers + 1
     depot_dummy = n_customers + 2
-    cost = calculate_solomon_cost(nodes)
+    cost = calculate_solomon_cost(nodes, digits=digits)
     cost[depot0, depot_dummy] = Inf
     cost[depot_dummy, depot0] = Inf
 

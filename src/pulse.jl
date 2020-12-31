@@ -37,6 +37,7 @@ function bounding_time_index(current_time::Float64, btimes::Vector{Float64})
     Δ = btimes[1] - btimes[2] 
     time_ub = btimes[1]
     k = Int(ceil((time_ub - current_time) / Δ)) + 1
+    k = max(k, 1)
     # if k <= length(btimes) 
     #     @assert current_time >= btimes[k]
     # end

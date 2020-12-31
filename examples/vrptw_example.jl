@@ -139,4 +139,5 @@ total_opt_cost += check_route([17, 5, 8, 6, 2, 18])
 
 @testset "OR-Tools-Example" begin
     @test total_distance == 73.0
+    @test total_distance == total_opt_cost
 end
