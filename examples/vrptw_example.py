@@ -1,10 +1,10 @@
 # Solving VRPTW 
 # Modified from the example given by Google OR-Tools https://developers.google.com/optimization/routing/vrp
 
-using Routing, OffsetArrays
-# include("../src/Routing_include.jl")
-
-using Test 
+from julia import Routing 
+import numpy as np
+from math import isclose
+Inf = np.Inf
 
 n_customers = 16
 
@@ -27,21 +27,21 @@ time_windows = [
     (10, 15),   # customer 15
     (11, 15),   # customer 16
 ]
-early_time = [time_windows[i][1] for i in 1:n_customers]
-late_time = [time_windows[i][2] for i in 1:n_customers]
+early_time = [time_windows[i][0] for i in range(n_customers)]
+late_time = [time_windows[i][1] for i in range(n_customers)]
 
 # Service time is zero in each node in this example
-service_time = zeros(n_customers)
+service_time = np.zeros(n_customers)
 
 # Customer demand, only for customer nodes
 load = [1, 1, 2, 4, 2, 4, 8, 8, 1, 2, 1, 2, 4, 4, 8, 8]
 
 # Create a set of requests
-requests = Vector{Request}()
-for i in 1:n_customers
-    request_id = i     
-    push!(requests, Request(request_id, early_time[i], late_time[i], load[i], service_time[i]))
-end
+requests = []
+for i in range(n_customers):
+    request_id = i + 1
+    requests.append(Routing.Request(request_id, early_time[i], late_time[i], load[i], service_time[i]))
+
 
 
 
@@ -49,7 +49,7 @@ end
 n_vehicles = n_customers    # assume there are enough number of vehicles
 capacity = 15               # vehicle capacity
 max_travel_time = 35        # the latest time that each vehicle returns to the depot
-fleet = Fleet(n_vehicles, capacity, max_travel_time)
+fleet = Routing.Fleet(n_vehicles, capacity, max_travel_time)
 
 
 
@@ -73,22 +73,22 @@ coordinates = [
     (7.98, 6.40)    # location 16
 ]
 # Create a set of nodes 
-nodes = Vector{Node}()
-for i in 0:n_customers
+nodes = []
+for i in range(n_customers+1):
     node_id = i
-    cx = coordinates[i+1][1]
-    cy = coordinates[i+1][2]
-    push!(nodes, Node(node_id, cx, cy))
-end
+    cx = coordinates[i][0]
+    cy = coordinates[i][1]
+    nodes.append(Routing.Node(node_id, cx, cy))
+
 
 # create a Solomon
-solomon = Solomon("Example VRPTW", nodes, fleet, requests) 
+solomon = Routing.Solomon("Example VRPTW", nodes, fleet, requests) 
 
 # solve
 # `digits` is the number of digits after the decimal point
 # to be considered in the Euclidean cost calculation
-@time routes, total_distance = solveVRP(solomon, digits=3, pricing_method="pulse")
+routes, total_distance = Routing.solveVRPpy(solomon, digits=3, pricing_method="pulse")
 
-@show total_distance
-@show routes
-@test isapprox(total_distance, 55.128)
+print("total_distance = ", total_distance)
+print("routes = ", routes)
+assert isclose(total_distance, 55.128)

@@ -2,8 +2,6 @@
 to_int(x::String) = parse(Int, x)
 to_float(x::String) = parse(Float64, x)
 
-
-
 distance(n1::Node, n2::Node) = sqrt((n1.cx - n2.cx)^2 + (n1.cy - n2.cy)^2)
 
 function calculate_solomon_cost(node::Array{Node}; digits=1)
@@ -37,7 +35,7 @@ function read_solomon_data(data_filename)
     xnetwork = xroot["network"]
     xnodes = xnetwork[1]["nodes"][1]["node"]
     n_nodes = length(xnodes)
-    node = Array{Node}(undef, n_nodes)
+    nodes = Vector{Node}()
     for i in 1:n_nodes
         xnode = xnodes[i]
         id = attribute(xnode, "id") |> to_int
@@ -45,11 +43,8 @@ function read_solomon_data(data_filename)
         cx = find_element(xnode, "cx") |> content |> to_float
         cy = find_element(xnode, "cy") |> content |> to_float
 
-        if id == 0 
-            node[end] = Node(id, type, cx, cy)
-        else
-            node[id] = Node(id, type, cx, cy)
-        end
+        # push!(nodes, Node(id, type, cx, cy))
+        push!(nodes, Node(id, cx, cy))
     end
 
     # Fleet 
@@ -61,33 +56,34 @@ function read_solomon_data(data_filename)
     arrival_node = find_element(xvec, "arrival_node") |> content |> to_int
     capacity = find_element(xvec, "capacity") |> content |> to_float
     max_travel_time = find_element(xvec, "max_travel_time") |> content |> to_float
-    fleet = Fleet(vehicle_type, n_vehicles, 
-                departure_node, arrival_node, capacity, max_travel_time)
+    # fleet = Fleet(vehicle_type, n_vehicles, departure_node, arrival_node, capacity, max_travel_time)
+    fleet = Fleet(n_vehicles, capacity, max_travel_time)
     
     # Requests
     xrequests = xroot["requests"][1]["request"]
     n_requests = length(xrequests)
-    request = Array{Request}(undef, n_requests)
+    requests = Vector{Request}()
     for i in 1:n_requests
         req = xrequests[i]
         id = attribute(req, "id") |> to_int
         node_id = attribute(req, "node") |> to_int
+        @assert id == node_id
         tw = find_element(req, "tw")
         start_time = find_element(tw, "start") |> content |> to_int
         end_time = find_element(tw, "end") |> content |> to_int
         quantity = find_element(req, "quantity") |> content |> to_float
         service_time = find_element(req, "service_time") |> content |> to_float
-        request[i] = Request(id, node_id, start_time, end_time, quantity, service_time)
+        push!(requests, Request(id, start_time, end_time, quantity, service_time))
     end
 
-    return dataset, data_name, node, fleet, request
+    return dataset, data_name, nodes, fleet, requests
 end
 
 function load_solomon(dataset_name::String)
     data_file_path = dataset_name * ".xml"
     data_file_path = joinpath(@__DIR__, "..", "solomon-1987", data_file_path)
     dataset, data_name, nodes, fleet, requests = read_solomon_data(data_file_path)
-    solomon = SolomonDataset(
+    solomon = Solomon(
         dataset_name,
         nodes,
         fleet,
@@ -96,27 +92,68 @@ function load_solomon(dataset_name::String)
     return solomon
 end
 
-function generate_solomon_vrptw_instance(solomon::SolomonDataset; digits=1)
-    nodes = solomon.nodes 
+
+function _vector_solomon(solomon::Solomon)
+    nodes_set = solomon.nodes 
     fleet = solomon.fleet
-    requests = solomon.requests
+    requests_set = solomon.requests
+
+    n_nodes_set = length(nodes_set)
+    n_requests_set = length(requests_set)
+
+    # Generate a vector for nodes_set
+    nodes_vec = Vector{Node}(undef, n_nodes_set)
+    for node in nodes_set
+        if node.id == 0 
+            nodes_vec[end] = node
+        elseif node.id > n_nodes_set
+            @error("Node ID $(node.id) is invalid. Node IDs must be sequential. Depot node ID must be zero.")
+        else
+            nodes_vec[node.id] = node
+        end
+    end
+
+    # Generate a vector for requests_set
+    requests_vec = Vector{Request}(undef, n_requests_set)
+    for request in requests_set
+        requests_vec[request.id] = request
+    end
+
+    return nodes_vec, fleet, requests_vec
+end
+
+
+function generate_solomon_vrptw_instance(solomon::Solomon; dists=OffsetArray(Float64[],0), digits=1)
+    # Solomon has nodes and requests as Set. 
+    # Also the node id for the depot is zero in Solomon
+    # _vector_solomon creates Vector for Set and put the depot node at the end.
+    nodes, fleet, requests = _vector_solomon(solomon)
 
     n_vehicles = fleet.number
     n_customers = length(requests)
 
     # Add a dummy node for depot at the end
     push!(nodes, nodes[end])
-    depot0 = n_customers + 1
-    depot_dummy = n_customers + 2
-    cost = calculate_solomon_cost(nodes, digits=digits)
-    cost[depot0, depot_dummy] = Inf
-    cost[depot_dummy, depot0] = Inf
-
+    depot = n_customers + 1
+    dummy = n_customers + 2
     n_nodes = length(nodes)
     @assert n_nodes - 2 == n_customers
     V = 1:n_vehicles
     N = 1:n_nodes
     C = 1:n_customers
+
+    if isempty(dists)
+        cost = calculate_solomon_cost(nodes, digits=digits)
+    else
+        cost = zeros(n_nodes, n_nodes)
+        for i in N, j in N 
+            start_node  = in(i, [depot, dummy]) ? 0 : i 
+            end_node    = in(j, [depot, dummy]) ? 0 : j
+            cost[i, j] = dists[start_node, end_node]
+        end
+    end
+    cost[depot, dummy] = Inf
+    cost[dummy, depot] = Inf
 
     d = [requests[i].quantity for i in C]
     q = fleet.capacity
@@ -138,8 +175,8 @@ function generate_solomon_vrptw_instance(solomon::SolomonDataset; digits=1)
     return vrptw_inst
 end
 
-function solomon_to_espprc(solomon::SolomonDataset, dual_var)
-    nodes, fleet, requests = solomon.nodes, solomon.fleet, solomon.requests
+function solomon_to_espprc(solomon::Solomon, dual_var)
+    nodes, fleet, requests = _vector_solomon(solomon)
     n_nodes = length(nodes)
     n_vehicles = fleet.number
     n_requests = length(requests)
@@ -169,13 +206,9 @@ function solomon_to_espprc(solomon::SolomonDataset, dual_var)
     destination = depot_dummy
     capacity = fleet.capacity
     dual_var = [dual_var; 0.0; 0.0]
-    # alpha = rand(0:20, n_nodes) * 2
-    # cost_mtx = t - repeat(alpha, 1, n_nodes)
-    # cost_mtx = t .* (rand(size(t)...) .- 0.25)
     cost_mtx = copy(t)
     for i in N
         for j in N
-            # println("($i, $j): dist=$(cost_mtx[i,j]), dv=$(dual_var[i])")
             cost_mtx[i,j] -= dual_var[i]
         end
     end

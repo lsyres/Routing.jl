@@ -84,36 +84,34 @@ end
 
 struct Node
     id::Int
-    type::Int
+    # type::Int
     cx::Float64
     cy::Float64
 end
 
 struct Fleet 
-    type::Int
+    # type::Int
     number::Int
-    departure_node::Int
-    arrival_node::Int
+    # departure_node::Int
+    # arrival_node::Int
     capacity::Float64
     max_travel_time::Float64
 end
 
 struct Request
     id::Int
-    node::Int
     start_time::Int
     end_time::Int
     quantity::Float64
     service_time::Float64
 end
 
-struct SolomonDataset
+struct Solomon
     data_name::String
     nodes::Vector{Node}
     fleet::Fleet
     requests::Vector{Request}
 end
-
 ################################################
 
 

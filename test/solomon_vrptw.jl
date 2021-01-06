@@ -4,7 +4,7 @@ include("../src/Routing_include.jl")
 # To plot
 using PyPlot
 
-function plot_solomon_solution(solomon::SolomonDataset, sol_routes, sol_obj, duration)
+function plot_solomon_solution(solomon::Solomon, sol_routes, sol_obj, duration)
     data_name = solomon.data_name
     nodes = solomon.nodes
 

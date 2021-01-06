@@ -237,6 +237,22 @@ function complete_BnB!(best_sol, vrptw, root_y, root_routes, root_obj; pricing_m
 
 end
 
+
+function solveVRPpy(solomon::Solomon; dists=Matrix{Float64}[], tw_reduce=true, pricing_method="pulse", digits=1)
+    if isempty(dists)
+        return solveVRP(solomon, tw_reduce=tw_reduce, pricing_method=pricing_method, digits=digits)
+    else
+        dists_OA = OffsetArray(dists, 0:size(dists,1)-1, 0:size(dists,2)-1)
+        return solveVRP(solomon, dists=dists_OA, tw_reduce=tw_reduce, pricing_method=pricing_method, digits=digits)
+    end
+end
+
+function solveVRP(solomon::Solomon; dists=OffsetArray(Float64[],0), tw_reduce=true, pricing_method="pulse", digits=1)
+    vrptw = generate_solomon_vrptw_instance(solomon, dists=dists, digits=digits)
+    return solveVRP(vrptw, tw_reduce=tw_reduce, pricing_method=pricing_method)
+end
+
+
 function solveVRP(vrptw::VRPTW_Instance; tw_reduce=true, pricing_method="pulse")
     println("Pricing method = $pricing_method")
 
@@ -292,10 +308,19 @@ function solveVRP(vrptw::VRPTW_Instance; tw_reduce=true, pricing_method="pulse")
     end
 
 
+    depot = size(vrptw.travel_time, 1) - 1
+    dummy = size(vrptw.travel_time, 1)
     final_routes = []
     for i in eachindex(best_sol.y)
-        if best_sol.y[i] > 1 - 1e-6
-            push!(final_routes, best_sol.routes[i])
+        if best_sol.y[i] > 1 - EPS
+            route = best_sol.routes[i]
+            if route[1] == depot
+                route[1] = 0
+            end
+            if route[end] == dummy
+                route[end] = 0
+            end
+            push!(final_routes, route)
         end
     end
     return final_routes, best_sol.objective

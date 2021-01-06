@@ -276,3 +276,7 @@ function print_pct_neg_arcs(pg::ESPPRC_Instance)
 
     println("% neg arcs : ", round(neg/count * 100, digits=2), " %")
 end
+
+function rd(route)
+    route 
+end

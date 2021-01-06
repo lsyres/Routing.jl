@@ -2,28 +2,14 @@
 
 ### VRPTW Input 
 
-You can either construct `VRPTW_Instance` or `SolomonDataset`.
+You can construct `Solomon`.
 
-### `VRPTW_Instance`
+### `Solomon`
+
+To create `Solomon`:
 
 ```julia
-struct VRPTW_Instance
-    travel_time     ::Matrix{Float64}
-    service_time    ::Vector{Float64}
-    early_time      ::Vector{Float64}
-    late_time       ::Vector{Float64}
-    load            ::Vector{Float64}
-    capacity        ::Float64
-    max_travel_time ::Float64
-end
-```
-The generation of `VRPTW_Instance` is described in this example: [`examples/vrptw_example.jl`](https://github.com/chkwon/Routing.jl/blob/master/examples/vrptw_example.jl).
-
-### `SolomonDataset`
-
-Another way is to create `SolomonDataset`.
-```julia
-struct SolomonDataset
+struct Solomon
     data_name::String
     nodes::Vector{Node}
     fleet::Fleet
@@ -62,14 +48,16 @@ This format is consistent with the format used by [VRP-REP.org](http://www.vrp-r
 
 - [Solomon, M.M., 1987. Algorithms for the vehicle routing and scheduling problems with time window constraints. Operations research, 35(2), pp.254-265.](https://doi.org/10.1287/opre.35.2.254)
 
-**One important difference is that the node id for the depot is the largest among all nodes, instead of 0. The node id numbering begins with 1. For example, if there are 25 customer request nodes, then the depot id is 26. Later the algorithm will add a dummy depot node, with id 27. **
+See [this example](https://github.com/chkwon/Routing.jl/blob/master/examples/vrptw_example.jl) and [that example](https://github.com/chkwon/Routing.jl/blob/master/examples/vrptw_example_with_dists.jl)
+
+
+### Solomon Benchmark Instances
 
 For an example of loading and solving the Solomon instances, see [test/solve_solomon_vrptw.jl](https://github.com/chkwon/VRPTW.jl/blob/master/test/solve_solomon_vrptw.jl) 
 
 <img src="https://github.com/chkwon/VRPTW.jl/raw/master/R102_025.png" width=500>
 
-
-When `SolomonDataset` is used, the distance between two coordinates is calculated by
+The distance between two coordinates is calculated by
 ```julia
 dist = floor(10 * sqrt( (x1-x2)^2 + (y1-y2)^2 )) / 10
 ```
@@ -97,3 +85,13 @@ Currently, this package implements a Branch-and-Price algorithm. The subproblem 
   - [x] ESPPRC by labeling algorithm
   - [x] First 400 columns with negative reduced costs were added. 
   - [ ] Approximate methods? 
+
+
+
+### Calling from Python 
+
+You can call `solveVRPpy` from Python via [`pyjulia`](https://github.com/JuliaPy/pyjulia).
+
+1. First install this pakcage `Routing.jl` in your Julia.
+2. Install `pyjulia` in your Python environment, following the [instruction](https://github.com/JuliaPy/pyjulia)). Note: when you run `julia.install()`, it will connect your current Python to PyCall.jl in your Julia. If you have used PyCall.jl within Julia, it may disconnect the old link. 
+3. Try [this example](https://github.com/chkwon/Routing.jl/blob/master/examples/vrptw_example.py) and [that example](https://github.com/chkwon/Routing.jl/blob/master/examples/vrptw_example_with_dists.py)

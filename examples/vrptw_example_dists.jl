@@ -53,42 +53,48 @@ fleet = Fleet(n_vehicles, capacity, max_travel_time)
 
 
 
-coordinates = [
-    (4.56, 3.20),   # location  0 - the depot
-    (2.28, 0.00),   # location  1
-    (9.12, 0.00),   # location  2
-    (0.00, 0.80),   # location  3
-    (1.14, 8.00),   # location  4
-    (5.70, 1.60),   # location  5
-    (7.98, 1.60),   # location  6
-    (3.42, 2.40),   # location  7
-    (6.84, 2.40),   # location  8
-    (5.70, 4.00),   # location  9
-    (9.12, 4.00),   # location 10
-    (1.14, 4.80),   # location 11
-    (2.28, 4.80),   # location 12
-    (3.42, 5.60),   # location 13
-    (6.84, 5.60),   # location 14
-    (0.00, 6.40),   # location 15
-    (7.98, 6.40)    # location 16
-]
 # Create a set of nodes 
 nodes = Vector{Node}()
-for i in 0:n_customers
+# if you can supply coordinates (cx, cy) to calculate the distance 
+# if you don't have coordinates, just put (0.0, 0.0)
+push!(nodes, Node(0, 0.0, 0.0))   # (id, cx, cy)
+for i in 1:n_customers
     node_id = i
-    cx = coordinates[i+1][1]
-    cy = coordinates[i+1][2]
-    push!(nodes, Node(node_id, cx, cy))
+    push!(nodes, Node(node_id, 0.0, 0.0))
 end
+
+# Since we didn't supply the coordinates, we need to provide the distance information
+dists_data = Float64[
+    0 6 9 8 7 3 6 2 3 2 6 6 4 4 5 9 7;
+    6 0 8 3 2 6 8 4 8 8 13 7 5 8 12 10 14; 
+    9 8 0 11 10 6 3 9 5 8 4 15 14 13 9 18 9; 
+    8 3 11 0 1 7 10 6 10 10 14 6 7 9 14 6 16; 
+    7 2 10 1 0 6 9 4 8 9 13 4 6 8 12 8 14; 
+    3 6 6 7 6 0 2 3 2 2 7 9 7 7 6 12 8; 
+    6 8 3 10 9 2 0 6 2 5 4 12 10 10 6 15 5; 
+    2 4 9 6 4 3 6 0 4 4 8 5 4 3 7 8 10; 
+    3 8 5 10 8 2 2 4 0 3 4 9 8 7 3 13 6; 
+    2 8 8 10 9 2 5 4 3 0 4 6 5 4 3 9 5; 
+    6 13 4 14 13 7 4 8 4 4 0 10 9 8 4 13 4; 
+    6 7 15 6 4 9 12 5 9 6 10 0 1 3 7 3 10; 
+    4 5 14 7 6 7 10 4 8 5 9 1 0 2 6 4 8; 
+    4 8 13 9 8 7 10 3 7 4 8 3 2 0 4 5 6; 
+    5 12 9 14 12 6 6 7 3 3 4 7 6 4 0 9 2; 
+    9 10 18 6 8 12 15 8 13 9 13 3 4 5 9 0 9; 
+    7 14 9 16 14 8 5 10 6 5 4 10 8 6 2 9 0; 
+]
+# In the above `travel_time_data`, the index '1' means depot and '2' means customer #1, and so on.
+# We want the index '0' means the depot, and '1' means customer #1.
+dists_oa = OffsetArray(dists_data, 0:n_customers, 0:n_customers)
 
 # create a Solomon
 solomon = Solomon("Example VRPTW", nodes, fleet, requests) 
 
 # solve
-# `digits` is the number of digits after the decimal point
-# to be considered in the Euclidean cost calculation
-@time routes, total_distance = solveVRP(solomon, digits=3, pricing_method="pulse")
+@time routes, total_distance = solveVRP(solomon, dists=dists_oa, pricing_method="pulse")
+# If you have given proper coordinates, don't pass `dists` as follows:
+# @time routes, total_distance = solveVRP(solomon, pricing_method="pulse")
 
 @show total_distance
 @show routes
-@test isapprox(total_distance, 55.128)
+@test total_distance == 73.0

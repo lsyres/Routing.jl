@@ -5,7 +5,7 @@ module Routing
 include("Routing_include.jl")
 
 export  Label, ESPPRC_Instance, VRPTW_Instance, 
-        Node, Fleet, Request, SolomonDataset,
+        Node, Fleet, Request, Solomon,
         solveESPPRC, solveESPPRC_vrp, solveVRP,
         read_solomon_data, calculate_solomon_cost, 
         calculate_path_time, calculate_path_cost,

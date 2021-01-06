@@ -2,6 +2,7 @@ using LightXML
 using JuMP, GLPK
 using ElasticArrays
 using DataStructures
+using OffsetArrays
 
 global counter = 0
 global counter1 = 0
