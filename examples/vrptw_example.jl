@@ -1,7 +1,7 @@
 # Solving VRPTW 
 # Modified from the example given by Google OR-Tools https://developers.google.com/optimization/routing/vrp
 
-using Routing, OffsetArrays
+using Routing
 # include("../src/Routing_include.jl")
 
 using Test 
