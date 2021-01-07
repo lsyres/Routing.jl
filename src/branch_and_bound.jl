@@ -238,20 +238,6 @@ function complete_BnB!(best_sol, vrptw, root_y, root_routes, root_obj; pricing_m
 end
 
 
-function solveVRPpy(solomon::Solomon; dists=Matrix{Float64}[], tw_reduce=true, pricing_method="pulse", digits=1)
-    if isempty(dists)
-        return solveVRP(solomon, tw_reduce=tw_reduce, pricing_method=pricing_method, digits=digits)
-    else
-        dists_OA = OffsetArray(dists, 0:size(dists,1)-1, 0:size(dists,2)-1)
-        return solveVRP(solomon, dists=dists_OA, tw_reduce=tw_reduce, pricing_method=pricing_method, digits=digits)
-    end
-end
-
-function solveVRP(solomon::Solomon; dists=OffsetArray(Float64[],0), tw_reduce=true, pricing_method="pulse", digits=1)
-    vrptw = generate_solomon_vrptw_instance(solomon, dists=dists, digits=digits)
-    return solveVRP(vrptw, tw_reduce=tw_reduce, pricing_method=pricing_method)
-end
-
 
 function solveVRP(vrptw::VRPTW_Instance; tw_reduce=true, pricing_method="pulse")
     println("Pricing method = $pricing_method")
@@ -326,4 +312,26 @@ function solveVRP(vrptw::VRPTW_Instance; tw_reduce=true, pricing_method="pulse")
     return final_routes, best_sol.objective
 
     # return best_sol.y, best_sol.routes, best_sol.objective
+end
+
+
+
+
+function solveVRP(solomon::Solomon, dists::Matrix{Float64}; tw_reduce=true, pricing_method="pulse", digits=1)
+    dists_OA = OffsetArray(dists, 0:size(dists,1)-1, 0:size(dists,2)-1)
+    return solveVRP(solomon, dists_OA, tw_reduce=tw_reduce, pricing_method=pricing_method, digits=digits)
+end
+
+# function solveVRPpy(solomon::Solomon; tw_reduce=true, pricing_method="pulse", digits=1)
+#     return solveVRP(solomon, tw_reduce=tw_reduce, pricing_method=pricing_method, digits=digits)
+# end
+
+function solveVRP(solomon::Solomon, dists::OffsetArray{Float64,2,Array{Float64,2}}; tw_reduce=true, pricing_method="pulse", digits=1)
+    vrptw = generate_solomon_vrptw_instance(solomon, dists=dists, digits=digits)
+    return solveVRP(vrptw, tw_reduce=tw_reduce, pricing_method=pricing_method)
+end
+
+function solveVRP(solomon::Solomon; tw_reduce=true, pricing_method="pulse", digits=1)
+    vrptw = generate_solomon_vrptw_instance(solomon, digits=digits)
+    return solveVRP(vrptw, tw_reduce=tw_reduce, pricing_method=pricing_method)
 end

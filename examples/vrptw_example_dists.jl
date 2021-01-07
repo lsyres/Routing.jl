@@ -88,10 +88,10 @@ dists_data = Float64[
 dists_oa = OffsetArray(dists_data, 0:n_customers, 0:n_customers)
 
 # create a Solomon
-solomon = Solomon("Example VRPTW", nodes, fleet, requests) 
+solomon = Solomon(nodes, fleet, requests) 
 
 # solve
-@time routes, total_distance = solveVRP(solomon, dists=dists_oa, pricing_method="pulse")
+@time routes, total_distance = solveVRP(solomon, dists_oa, pricing_method="pulse")
 # If you have given proper coordinates, don't pass `dists` as follows:
 # @time routes, total_distance = solveVRP(solomon, pricing_method="pulse")
 

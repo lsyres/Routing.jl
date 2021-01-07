@@ -107,7 +107,6 @@ struct Request
 end
 
 struct Solomon
-    data_name::String
     nodes::Vector{Node}
     fleet::Fleet
     requests::Vector{Request}

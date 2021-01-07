@@ -82,12 +82,12 @@ for i in range(n_customers+1):
 
 
 # create a Solomon
-solomon = Routing.Solomon("Example VRPTW", nodes, fleet, requests) 
+solomon = Routing.Solomon(nodes, fleet, requests) 
 
 # solve
 # `digits` is the number of digits after the decimal point
 # to be considered in the Euclidean cost calculation
-routes, total_distance = Routing.solveVRPpy(solomon, digits=3, pricing_method="pulse")
+routes, total_distance = Routing.solveVRP(solomon, digits=3, pricing_method="pulse")
 
 print("total_distance = ", total_distance)
 print("routes = ", routes)

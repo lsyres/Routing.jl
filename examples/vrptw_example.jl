@@ -82,7 +82,7 @@ for i in 0:n_customers
 end
 
 # create a Solomon
-solomon = Solomon("Example VRPTW", nodes, fleet, requests) 
+solomon = Solomon(nodes, fleet, requests) 
 
 # solve
 # `digits` is the number of digits after the decimal point

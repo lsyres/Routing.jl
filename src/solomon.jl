@@ -84,7 +84,6 @@ function load_solomon(dataset_name::String)
     data_file_path = joinpath(@__DIR__, "..", "solomon-1987", data_file_path)
     dataset, data_name, nodes, fleet, requests = read_solomon_data(data_file_path)
     solomon = Solomon(
-        dataset_name,
         nodes,
         fleet,
         requests
