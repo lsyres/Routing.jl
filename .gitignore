@@ -1,6 +1,5 @@
 /Manifest.toml
 .vscode
-.github
 *.dylib
 *.mem 
 

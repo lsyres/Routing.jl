@@ -1,5 +1,7 @@
-[![Build Status](https://travis-ci.org/chkwon/Routing.jl.svg?branch=master)](https://travis-ci.org/chkwon/Routing.jl)
-[![Coverage Status](https://coveralls.io/repos/github/chkwon/Routing.jl/badge.svg?branch=master)](https://coveralls.io/github/chkwon/Routing.jl?branch=master)
+
+[![Build Status](https://github.com/chkwon/Routing.jl/workflows/CI/badge.svg?branch=master)](https://github.com/chkwon/Routing.jl/actions?query=workflow%3ACI)
+[![codecov](https://codecov.io/gh/chkwon/Routing.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/chkwon/Routing.jl)
+
 
 # Routing.jl
 
